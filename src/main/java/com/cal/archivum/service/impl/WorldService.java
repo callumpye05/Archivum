@@ -1,5 +1,6 @@
 package com.cal.archivum.service.impl;
 
+import com.cal.archivum.dto.WorldDto;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.repository.WorldRepository;
 import com.cal.archivum.service.IWorldService;
@@ -18,20 +19,21 @@ public class WorldService implements IWorldService {
     }
 
     @Override
-    public World createWorld(World world) {
-        return worldRepo.save(world);
+    public World createWorld(WorldDto dto) {
+        World newWorld = transformFromDto(dto);
+        return worldRepo.save(newWorld);
     }
 
     @Override
-    public World updateWorld(Long id, World world) {
+    public World updateWorld(Long id, WorldDto dto) {
         World  existingWorld = worldRepo.getById(id);
 
-        //then check what is null and what isn't
-        if(world.getWorldDesc() != null) {
-            existingWorld.setWorldDesc(world.getWorldDesc());
+
+        if(dto.worldDesc() != null) {
+            existingWorld.setWorldDesc(dto.worldDesc());
         }
-        if(world.getWorldName() != null) {
-            existingWorld.setWorldName(world.getWorldName());
+        if(dto.worldName() != null) {
+            existingWorld.setWorldName(dto.worldName());
         }
 
         return worldRepo.save(existingWorld);
@@ -50,5 +52,14 @@ public class WorldService implements IWorldService {
     @Override
     public World getWorld(Long id) {
         return worldRepo.findById(id).orElseThrow();
+    }
+
+    @Override
+    public World transformFromDto(WorldDto dto) {
+        World world = new World();
+        world.setWorldDesc(dto.worldDesc());
+        world.setWorldName(dto.worldName());
+
+        return worldRepo.save(world);
     }
 }

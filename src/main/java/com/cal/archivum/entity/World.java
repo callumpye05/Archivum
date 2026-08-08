@@ -24,6 +24,14 @@ public class World {
     @Column(name = "world_desc")
     private String worldDesc;
 
+
     @Column(name = "created_at")
     private Instant createdAt;
+
+
+    @PrePersist
+    protected void setTime() {
+        createdAt = Instant.now();
+    }
+
 }
