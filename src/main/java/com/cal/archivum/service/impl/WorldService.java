@@ -20,8 +20,7 @@ public class WorldService implements IWorldService {
 
     @Override
     public World createWorld(WorldDto dto) {
-        World newWorld = transformFromDto(dto);
-        return worldRepo.save(newWorld);
+        return transformFromDto(dto); //Already saves the value in the method
     }
 
     @Override

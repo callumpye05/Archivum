@@ -11,7 +11,7 @@ public interface IWorldService {
     World getWorld(Long id);
     World createWorld(WorldDto dto);
     World updateWorld(Long id, WorldDto dto);
-    void deleteWorld(Long id);
+    void deleteWorld(Long id); //TODO : Cascade deletion needed on characters
     World transformFromDto(WorldDto dto);
 
 }

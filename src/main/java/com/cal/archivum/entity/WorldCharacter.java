@@ -8,10 +8,9 @@ import lombok.Setter;
 import java.time.Instant;
 
 @Entity
-@Getter
-@Setter
+@Getter @Setter
 @Table(name = "Characters")
-public class Character {
+public class WorldCharacter {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,7 +24,7 @@ public class Character {
     private String characterSpecies;
 
     @Column(name = "character_age" , nullable = false)
-    private int age;
+    private Integer age;
 
     @Column(name = "character_desc")
     private String characterDescription;
