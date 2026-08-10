@@ -1,4 +1,8 @@
 package com.cal.archivum.dto;
 
-public record LocationDto() {
+import com.cal.archivum.enums.LocationType;
+
+public record LocationDto(String locationName,
+                          LocationType locationType,
+                          String locationDesc) {
 }

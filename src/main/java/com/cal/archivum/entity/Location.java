@@ -38,5 +38,4 @@ public class Location {
     protected void setTime() {
         createdAt = Instant.now();
     }
-
 }
