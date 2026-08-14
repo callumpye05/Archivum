@@ -40,6 +40,7 @@ public class WorldController {
 
     @DeleteMapping("worlds/delete/{id}")
     public void deleteWorld(@PathVariable Long id) {
+
         worldService.deleteWorld(id);
     }
 }

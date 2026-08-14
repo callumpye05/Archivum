@@ -5,6 +5,7 @@ import com.cal.archivum.dto.LocationDto;
 import com.cal.archivum.entity.Location;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.exception.LocationNotFound;
+import com.cal.archivum.exception.WorldNotFound;
 import com.cal.archivum.repository.LocationRepository;
 import com.cal.archivum.repository.WorldRepository;
 import com.cal.archivum.service.ILocationService;
@@ -25,7 +26,7 @@ public class LocationService implements ILocationService {
 
     @Override
     public List<Location> getAllLocationsByWorld(Long worldId) {
-        World world = worldRepository.findById(worldId).orElseThrow();
+        World world = worldRepository.findById(worldId).orElseThrow(() -> new WorldNotFound(worldId));
         return locationRepository.findAllByWorld(world);
     }
 
@@ -42,7 +43,7 @@ public class LocationService implements ILocationService {
 
     @Override
     public Location updateLocation(Long id, LocationDto dto) {
-        Location existingLocation= locationRepository.findById(id).orElseThrow();
+        Location existingLocation= locationRepository.findById(id).orElseThrow(() -> new LocationNotFound(id));
 
         if(dto.locationName() != null) {
             existingLocation.setLocationName(dto.locationName());
@@ -60,6 +61,7 @@ public class LocationService implements ILocationService {
 
     @Override
     public void deleteLocation(Long id) {
+        locationRepository.findById(id).orElseThrow(() -> new LocationNotFound(id));
         locationRepository.deleteById(id);
     }
 
@@ -67,7 +69,7 @@ public class LocationService implements ILocationService {
     public Location transformFromDto(LocationDto dto, Long worldId) {
 
         Location location = new Location();
-        World world =worldRepository.findById(worldId).orElseThrow();
+        World world =worldRepository.findById(worldId).orElseThrow(() -> new WorldNotFound(worldId));
         location.setLocationName(dto.locationName());
         location.setLocationType(dto.locationType());
         location.setLocationDescription(dto.locationDesc());

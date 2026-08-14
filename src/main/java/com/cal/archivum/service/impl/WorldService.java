@@ -21,12 +21,12 @@ public class WorldService implements IWorldService {
 
     @Override
     public World createWorld(WorldDto dto) {
-        return transformFromDto(dto); //Already saves the value in the method
+        return worldRepo.save(transformFromDto(dto)); //Already saves the value in the method
     }
 
     @Override
     public World updateWorld(Long id, WorldDto dto) {
-        World  existingWorld = worldRepo.getById(id);
+        World  existingWorld = worldRepo.findById(id).orElseThrow(() -> new WorldNotFound(id));
 
 
         if(dto.worldDesc() != null) {
@@ -41,6 +41,7 @@ public class WorldService implements IWorldService {
 
     @Override
     public void deleteWorld(Long id) {
+        worldRepo.findById(id).orElseThrow(() -> new WorldNotFound(id));
         worldRepo.deleteById(id);
     }
 
@@ -60,6 +61,6 @@ public class WorldService implements IWorldService {
         world.setWorldDesc(dto.worldDesc());
         world.setWorldName(dto.worldName());
 
-        return worldRepo.save(world);
+        return world;
     }
 }
