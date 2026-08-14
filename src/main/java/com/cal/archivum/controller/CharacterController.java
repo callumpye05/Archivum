@@ -19,7 +19,8 @@ public class CharacterController {
 
     @GetMapping("/worlds/{worldId}/characters")
     public List<WorldCharacter> getAllCharactersFromWorld(@PathVariable Long worldId) {
-        return characterService.getAllCharactersFromWorld(worldId);
+        return  characterService.getAllCharactersFromWorld(worldId);
+
     }
 
     @GetMapping("/characters/{characterId}")

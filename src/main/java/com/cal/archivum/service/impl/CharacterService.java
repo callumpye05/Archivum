@@ -3,6 +3,7 @@ package com.cal.archivum.service.impl;
 import com.cal.archivum.dto.CharacterDto;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.entity.WorldCharacter;
+import com.cal.archivum.exception.CharacterNotFound;
 import com.cal.archivum.repository.CharacterRepository;
 import com.cal.archivum.repository.WorldRepository;
 import com.cal.archivum.service.ICharacterService;
@@ -29,7 +30,7 @@ public class CharacterService implements ICharacterService {
 
     @Override
     public WorldCharacter getCharacter(Long id) {
-        return characterRepo.findById(id).orElseThrow();
+       return characterRepo.findById(id).orElseThrow(() -> new CharacterNotFound(id));
     }
 
     @Override

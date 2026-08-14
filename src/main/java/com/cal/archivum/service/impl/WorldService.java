@@ -2,6 +2,7 @@ package com.cal.archivum.service.impl;
 
 import com.cal.archivum.dto.WorldDto;
 import com.cal.archivum.entity.World;
+import com.cal.archivum.exception.WorldNotFound;
 import com.cal.archivum.repository.WorldRepository;
 import com.cal.archivum.service.IWorldService;
 import org.springframework.stereotype.Service;
@@ -50,7 +51,7 @@ public class WorldService implements IWorldService {
 
     @Override
     public World getWorld(Long id) {
-        return worldRepo.findById(id).orElseThrow();
+        return worldRepo.findById(id).orElseThrow(() -> new WorldNotFound(id));
     }
 
     @Override

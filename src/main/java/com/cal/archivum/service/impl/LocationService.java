@@ -4,6 +4,7 @@ package com.cal.archivum.service.impl;
 import com.cal.archivum.dto.LocationDto;
 import com.cal.archivum.entity.Location;
 import com.cal.archivum.entity.World;
+import com.cal.archivum.exception.LocationNotFound;
 import com.cal.archivum.repository.LocationRepository;
 import com.cal.archivum.repository.WorldRepository;
 import com.cal.archivum.service.ILocationService;
@@ -30,7 +31,7 @@ public class LocationService implements ILocationService {
 
     @Override
     public Location getLocation(Long id) {
-        return locationRepository.findById(id).orElseThrow();
+        return locationRepository.findById(id).orElseThrow(() -> new LocationNotFound(id));
     }
 
     @Override

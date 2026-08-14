@@ -1,6 +1,6 @@
 
---sample test data generated
-INSERT INTO Worlds (world_name, world_desc, created_at)
+--sample test data generated, using ignore because I already put it in SQLECTRON
+INSERT IGNORE INTO Worlds (world_name, world_desc, created_at)
 VALUES
 (
     'Highberry',
