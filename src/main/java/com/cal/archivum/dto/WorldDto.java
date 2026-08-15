@@ -1,9 +1,8 @@
 package com.cal.archivum.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+public interface WorldDto {
 
+    String worldName();
 
-
-public record WorldDto(String worldName , String worldDesc) {
+    String worldDesc();
 }

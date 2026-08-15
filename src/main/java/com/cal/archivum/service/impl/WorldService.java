@@ -1,6 +1,8 @@
 package com.cal.archivum.service.impl;
 
 import com.cal.archivum.dto.WorldDto;
+import com.cal.archivum.dto.impl.CreateWorldDto;
+import com.cal.archivum.dto.impl.UpdateWorldDto;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.exception.WorldNotFound;
 import com.cal.archivum.repository.WorldRepository;
@@ -8,7 +10,6 @@ import com.cal.archivum.service.IWorldService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class WorldService implements IWorldService {
@@ -20,12 +21,12 @@ public class WorldService implements IWorldService {
     }
 
     @Override
-    public World createWorld(WorldDto dto) {
+    public World createWorld(CreateWorldDto dto) {
         return worldRepo.save(transformFromDto(dto)); //Already saves the value in the method
     }
 
     @Override
-    public World updateWorld(Long id, WorldDto dto) {
+    public World updateWorld(Long id, UpdateWorldDto dto) {
         World  existingWorld = worldRepo.findById(id).orElseThrow(() -> new WorldNotFound(id));
 
 

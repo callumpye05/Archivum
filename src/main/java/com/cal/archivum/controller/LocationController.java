@@ -1,9 +1,10 @@
 package com.cal.archivum.controller;
 
-import com.cal.archivum.dto.LocationDto;
+import com.cal.archivum.dto.impl.CreateLocationDto;
+import com.cal.archivum.dto.impl.UpdateLocationDto;
 import com.cal.archivum.entity.Location;
 import com.cal.archivum.service.ILocationService;
-import org.springframework.stereotype.Controller;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,12 +29,12 @@ public class LocationController {
     }
 
     @PostMapping("/worlds/{worldId}/locations")
-    public Location createLocation(@PathVariable Long worldId , @RequestBody LocationDto dto ) {
+    public Location createLocation(@PathVariable Long worldId , @Valid @RequestBody CreateLocationDto dto ) {
         return locationService.createLocation(dto , worldId);
     }
 
     @PutMapping("/locations/{locationId}")
-    public Location updateLocation(@PathVariable Long locationId , @RequestBody LocationDto dto) {
+    public Location updateLocation(@PathVariable Long locationId , @Valid @RequestBody UpdateLocationDto dto) {
         return locationService.updateLocation(locationId , dto);
     }
 

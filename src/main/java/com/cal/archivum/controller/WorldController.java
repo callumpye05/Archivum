@@ -1,8 +1,10 @@
 package com.cal.archivum.controller;
 
-import com.cal.archivum.dto.WorldDto;
+import com.cal.archivum.dto.impl.CreateWorldDto;
+import com.cal.archivum.dto.impl.UpdateWorldDto;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.service.IWorldService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,13 +29,13 @@ public class WorldController {
     }
 
     @PostMapping("worlds/create")
-    public World createWorld(@RequestBody WorldDto dto) {
+    public World createWorld( @Valid @RequestBody CreateWorldDto dto) {
         return worldService.createWorld(dto);
 
     }
 
     @PutMapping("worlds/update/{id}")
-    public World updateWorld(@PathVariable Long id, @RequestBody WorldDto dto) {
+    public World updateWorld(@PathVariable Long id, @Valid @RequestBody UpdateWorldDto dto) {
         return worldService.updateWorld(id , dto);
 
     }

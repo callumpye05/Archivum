@@ -2,6 +2,8 @@ package com.cal.archivum.service.impl;
 
 
 import com.cal.archivum.dto.LocationDto;
+import com.cal.archivum.dto.impl.CreateLocationDto;
+import com.cal.archivum.dto.impl.UpdateLocationDto;
 import com.cal.archivum.entity.Location;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.exception.LocationNotFound;
@@ -36,13 +38,13 @@ public class LocationService implements ILocationService {
     }
 
     @Override
-    public Location createLocation(LocationDto dto, Long worldId) {
+    public Location createLocation(CreateLocationDto dto, Long worldId) {
         Location newLocation = transformFromDto(dto , worldId);
         return locationRepository.save(newLocation);
     }
 
     @Override
-    public Location updateLocation(Long id, LocationDto dto) {
+    public Location updateLocation(Long id, UpdateLocationDto dto) {
         Location existingLocation= locationRepository.findById(id).orElseThrow(() -> new LocationNotFound(id));
 
         if(dto.locationName() != null) {

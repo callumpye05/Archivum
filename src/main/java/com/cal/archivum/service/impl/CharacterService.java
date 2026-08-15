@@ -1,6 +1,8 @@
 package com.cal.archivum.service.impl;
 
 import com.cal.archivum.dto.CharacterDto;
+import com.cal.archivum.dto.impl.CreateCharacterDto;
+import com.cal.archivum.dto.impl.UpdateCharacterDto;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.entity.WorldCharacter;
 import com.cal.archivum.exception.CharacterNotFound;
@@ -35,14 +37,14 @@ public class CharacterService implements ICharacterService {
     }
 
     @Override
-    public WorldCharacter createCharacter(CharacterDto dto , Long worldId) {
+    public WorldCharacter createCharacter(CreateCharacterDto dto , Long worldId) {
         worldRepo.findById(worldId).orElseThrow(()-> new WorldNotFound(worldId));
         WorldCharacter character = transformFromDto(dto,worldId);
         return characterRepo.save(character);
     }
 
     @Override
-    public WorldCharacter updateCharacter(Long id, CharacterDto dto) {
+    public WorldCharacter updateCharacter(Long id, UpdateCharacterDto dto) {
         WorldCharacter existingCharacter = characterRepo.findById(id).orElseThrow(()-> new CharacterNotFound(id));
 
         if(dto.characterName() != null) {

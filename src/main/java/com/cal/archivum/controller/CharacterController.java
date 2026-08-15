@@ -1,9 +1,10 @@
 package com.cal.archivum.controller;
 
-import com.cal.archivum.dto.CharacterDto;
+import com.cal.archivum.dto.impl.CreateCharacterDto;
+import com.cal.archivum.dto.impl.UpdateCharacterDto;
 import com.cal.archivum.entity.WorldCharacter;
 import com.cal.archivum.service.ICharacterService;
-import com.cal.archivum.service.impl.CharacterService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,12 +31,12 @@ public class CharacterController {
 
 
     @PostMapping ("/worlds/{worldId}/characters")
-    public WorldCharacter createCharacter(@PathVariable Long worldId, @RequestBody CharacterDto dto) {
+    public WorldCharacter createCharacter(@PathVariable Long worldId, @Valid @RequestBody CreateCharacterDto dto) {
         return characterService.createCharacter(dto, worldId);
     }
 
     @PutMapping("/characters/{characterId}")
-    public WorldCharacter updateCharacter(@PathVariable Long characterId, @RequestBody CharacterDto dto) {
+    public WorldCharacter updateCharacter(@PathVariable Long characterId,  @Valid @RequestBody UpdateCharacterDto dto) {
         return characterService.updateCharacter(characterId , dto);
     }
 
