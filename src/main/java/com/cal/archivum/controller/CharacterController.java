@@ -29,6 +29,8 @@ public class CharacterController {
         return characterService.getCharacter(characterId);
     }
 
+    //TODO : ADD getCharacterByWorldId method
+
 
     @PostMapping ("/worlds/{worldId}/characters")
     public WorldCharacter createCharacter(@PathVariable Long worldId, @Valid @RequestBody CreateCharacterDto dto) {

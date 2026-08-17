@@ -16,4 +16,5 @@ public interface ILocationService {
     Location updateLocation(Long id, UpdateLocationDto dto);
     void deleteLocation(Long id);
     Location transformFromDto(LocationDto dto , Long worldId);
+    Location getLocationByWorldId(Long worldId , Long locationId);
 }

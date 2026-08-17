@@ -28,6 +28,11 @@ public class LocationController {
         return locationService.getLocation(locationId);
     }
 
+    @GetMapping("/worlds/{worldId}/locations/{locationId}")
+    public Location getLocation(@PathVariable Long locationId , @PathVariable Long worldId) {
+        return locationService.getLocationByWorldId(worldId , locationId);
+    }
+
     @PostMapping("/worlds/{worldId}/locations")
     public Location createLocation(@PathVariable Long worldId , @Valid @RequestBody CreateLocationDto dto ) {
         return locationService.createLocation(dto , worldId);

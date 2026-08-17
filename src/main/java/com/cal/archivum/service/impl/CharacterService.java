@@ -6,6 +6,7 @@ import com.cal.archivum.dto.impl.UpdateCharacterDto;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.entity.WorldCharacter;
 import com.cal.archivum.exception.CharacterNotFound;
+import com.cal.archivum.exception.CharacterNotFoundByWorld;
 import com.cal.archivum.exception.WorldNotFound;
 import com.cal.archivum.repository.CharacterRepository;
 import com.cal.archivum.repository.WorldRepository;
@@ -13,6 +14,7 @@ import com.cal.archivum.service.ICharacterService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CharacterService implements ICharacterService {
@@ -34,6 +36,11 @@ public class CharacterService implements ICharacterService {
     @Override
     public WorldCharacter getCharacter(Long id) {
        return characterRepo.findById(id).orElseThrow(() -> new CharacterNotFound(id));
+    }
+
+
+    public WorldCharacter getCharacterWithWorldId(Long characterId, Long worldId) {
+        return characterRepo.findByCharacterIdAndWorldWorldId(characterId, worldId).orElseThrow(() -> new CharacterNotFoundByWorld(characterId , worldId));
     }
 
     @Override

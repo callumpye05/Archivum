@@ -7,6 +7,7 @@ import com.cal.archivum.dto.impl.UpdateLocationDto;
 import com.cal.archivum.entity.Location;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.exception.LocationNotFound;
+import com.cal.archivum.exception.LocationNotFoundByWorld;
 import com.cal.archivum.exception.WorldNotFound;
 import com.cal.archivum.repository.LocationRepository;
 import com.cal.archivum.repository.WorldRepository;
@@ -35,6 +36,11 @@ public class LocationService implements ILocationService {
     @Override
     public Location getLocation(Long id) {
         return locationRepository.findById(id).orElseThrow(() -> new LocationNotFound(id));
+    }
+
+    @Override
+    public Location getLocationByWorldId(Long worldId, Long locationId) {
+        return locationRepository.findByIdAndWorldWorldId(locationId , worldId).orElseThrow(()-> new LocationNotFoundByWorld(locationId, worldId));
     }
 
     @Override
