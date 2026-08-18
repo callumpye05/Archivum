@@ -9,7 +9,7 @@ import java.time.Instant;
 
 @Entity
 @Getter @Setter
-@Table(name = "Characters")
+@Table(name = "characters")
 public class WorldCharacter {
 
     @Id

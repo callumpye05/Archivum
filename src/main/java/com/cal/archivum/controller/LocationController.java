@@ -29,7 +29,7 @@ public class LocationController {
     }
 
     @GetMapping("/worlds/{worldId}/locations/{locationId}")
-    public Location getLocation(@PathVariable Long locationId , @PathVariable Long worldId) {
+    public Location getLocationByWorld(@PathVariable Long locationId , @PathVariable Long worldId) {
         return locationService.getLocationByWorldId(worldId , locationId);
     }
 

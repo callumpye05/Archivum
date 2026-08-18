@@ -29,7 +29,11 @@ public class CharacterController {
         return characterService.getCharacter(characterId);
     }
 
-    //TODO : ADD getCharacterByWorldId method
+
+    @GetMapping("/worlds/{worldId}/characters/{characterId}")
+    public WorldCharacter getCharacterByWorld(@PathVariable Long  worldId , @PathVariable Long characterId) {
+        return characterService.getCharacterByWorldId(worldId , characterId);
+    }
 
 
     @PostMapping ("/worlds/{worldId}/characters")

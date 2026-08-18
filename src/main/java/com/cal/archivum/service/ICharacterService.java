@@ -15,4 +15,5 @@ public interface ICharacterService  {
     WorldCharacter updateCharacter(Long id, UpdateCharacterDto dto);
     void deleteCharacter(Long id);
     WorldCharacter transformFromDto(CharacterDto dto , Long worldId);
+    WorldCharacter getCharacterByWorldId(Long worldId , Long characterId);
 }

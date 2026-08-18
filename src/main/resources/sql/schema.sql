@@ -1,5 +1,5 @@
 
-CREATE TABLE IF NOT EXISTS Worlds (
+CREATE TABLE IF NOT EXISTS worlds (
 
         world_id BIGINT AUTO_INCREMENT PRIMARY KEY,
         world_name VARCHAR(100) UNIQUE NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS Worlds (
         created_at TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS Characters(
+CREATE TABLE IF NOT EXISTS characters(
 
     character_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     character_name VARCHAR(100) NOT NULL,
@@ -17,11 +17,11 @@ CREATE TABLE IF NOT EXISTS Characters(
     character_nationality VARCHAR(100), --for now
     created_at TIMESTAMP,
     world_id BIGINT NOT NULL,
-    FOREIGN KEY (world_id) REFERENCES Worlds(world_id)
+    FOREIGN KEY (world_id) REFERENCES worlds(world_id)
 );
 
 
-CREATE TABLE IF NOT EXISTS Locations(
+CREATE TABLE IF NOT EXISTS locations(
 
     location_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     location_name VARCHAR(100) NOT NULL,
@@ -29,5 +29,5 @@ CREATE TABLE IF NOT EXISTS Locations(
     location_desc TEXT,
     created_at TIMESTAMP,
     world_id BIGINT NOT NULL,
-    FOREIGN KEY (world_id) REFERENCES Worlds(world_id)
+    FOREIGN KEY (world_id) REFERENCES worlds(world_id)
 );
