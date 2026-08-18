@@ -39,26 +39,13 @@ public class CharacterService implements ICharacterService {
     }
 
 
-    /*
+
     @Override
     public WorldCharacter getCharacterByWorldId(Long worldId, Long characterId) {
         return characterRepo.findByCharacterIdAndWorldWorldId(characterId, worldId).orElseThrow(() -> new CharacterNotFoundByWorld(characterId , worldId));
     }
-    */
 
-    public WorldCharacter getCharacterByWorldId(Long worldId, Long characterId) {
 
-        System.out.println("worldId = " + worldId);
-        System.out.println("characterId = " + characterId);
-
-        System.out.println("findById = " + characterRepo.findById(characterId));
-
-        return characterRepo
-                .findByCharacterIdAndWorldWorldId(characterId, worldId)
-                .orElseThrow(() ->
-                        new CharacterNotFoundByWorld(characterId, worldId)
-                );
-    }
 
     @Override
     public WorldCharacter createCharacter(CreateCharacterDto dto , Long worldId) {
