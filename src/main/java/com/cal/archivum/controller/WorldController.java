@@ -23,7 +23,7 @@ public class WorldController {
         return worldService.getAllWorlds();
     }
 
-    @GetMapping("/worlds/search/{id}")
+    @GetMapping("/worlds/{id}")
     public World getWorld(@PathVariable Long id) {
        return worldService.getWorld(id);
     }
@@ -34,15 +34,18 @@ public class WorldController {
 
     }
 
-    @PutMapping("worlds/update/{id}")
+    @PutMapping("worlds/{id}")
     public World updateWorld(@PathVariable Long id, @Valid @RequestBody UpdateWorldDto dto) {
         return worldService.updateWorld(id , dto);
 
     }
 
-    @DeleteMapping("worlds/delete/{id}")
+    @DeleteMapping("worlds/{id}")
     public void deleteWorld(@PathVariable Long id) {
 
         worldService.deleteWorld(id);
     }
+
+
+
 }

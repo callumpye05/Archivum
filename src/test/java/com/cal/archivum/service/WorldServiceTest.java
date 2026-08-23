@@ -49,11 +49,9 @@ class WorldServiceTest {
     @Test
     void getWorld_shouldReturnWorld_whenWorldExists() {
 
-        when(worldRepo.findById(1L))
-                .thenReturn(Optional.of(testWorld));
+        when(worldRepo.findById(1L)).thenReturn(Optional.of(testWorld));
 
         World result = worldService.getWorld(1L);
-
         assertNotNull(result);
         assertEquals(1L, result.getWorldId());
         assertEquals("Highberry", result.getWorldName());
