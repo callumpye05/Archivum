@@ -22,4 +22,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleLocationNotFound(LocationNotFound ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
+
+    @ExceptionHandler(CharacterNotFoundByWorld.class)
+    public ResponseEntity<String> handleCharacterNotFoundByWorldNotFound(CharacterNotFoundByWorld ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+
+    }
+
 }
