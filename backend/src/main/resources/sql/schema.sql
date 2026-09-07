@@ -1,10 +1,23 @@
+CREATE TABLE IF NOT EXISTS users (
+    user_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    user_name VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL
+    );
+
+
+
 
 CREATE TABLE IF NOT EXISTS worlds (
 
         world_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-        world_name VARCHAR(100) UNIQUE NOT NULL,
+        world_name VARCHAR(100) NOT NULL,
         world_desc TEXT,
-        created_at TIMESTAMP
+        created_at TIMESTAMP,
+        user_id BIGINT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(user_id),
+        UNIQUE (user_id, world_name)
 );
 
 CREATE TABLE IF NOT EXISTS characters(
