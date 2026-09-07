@@ -14,7 +14,6 @@ import com.cal.archivum.service.ICharacterService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class CharacterService implements ICharacterService {

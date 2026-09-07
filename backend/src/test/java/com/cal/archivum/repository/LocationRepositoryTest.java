@@ -2,7 +2,6 @@ package com.cal.archivum.repository;
 
 import com.cal.archivum.entity.Location;
 import com.cal.archivum.entity.World;
-import com.cal.archivum.entity.WorldCharacter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

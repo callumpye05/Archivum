@@ -6,9 +6,7 @@ import com.cal.archivum.dto.impl.UpdateWorldDto;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.exception.WorldNotFound;
 import com.cal.archivum.service.IWorldService;
-import com.cal.archivum.service.impl.WorldService;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.test.web.servlet.ResultMatcher;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +19,6 @@ import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.any;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
