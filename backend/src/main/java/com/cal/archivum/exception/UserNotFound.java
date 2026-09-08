@@ -1,8 +1,9 @@
 package com.cal.archivum.exception;
 
 public class UserNotFound extends RuntimeException {
-    public UserNotFound(String userOrEmail) {
+    public UserNotFound(Long userId) {
 
-        super("User not found with username/email : " + userOrEmail);
+
+        super("No User was found with the id : " + userId);
     }
 }

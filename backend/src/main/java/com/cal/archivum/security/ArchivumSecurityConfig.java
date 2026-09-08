@@ -1,5 +1,6 @@
-package com.cal.security;
+package com.cal.archivum.security;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
