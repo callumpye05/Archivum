@@ -3,7 +3,9 @@ package com.cal.archivum.service.impl;
 import com.cal.archivum.dto.impl.CreateUserDto;
 import com.cal.archivum.dto.impl.UpdateUserDto;
 import com.cal.archivum.entity.User;
+import com.cal.archivum.exception.EmailAlreadyUsed;
 import com.cal.archivum.exception.UserNotFoundByEmailOrUsername;
+import com.cal.archivum.exception.UsernameAlreadyUsed;
 import com.cal.archivum.repository.UserRepository;
 import com.cal.archivum.service.IUserService;
 import org.springframework.security.core.Authentication;
@@ -26,18 +28,19 @@ public class UserService implements IUserService {
 
 
     @Override
-    //TODO : prevent duplicate emails and users in registration
+
     public User createUser(CreateUserDto createUser) {
-            return userRepo.save(fromCreateDto(createUser));
+        return userRepo.save(fromCreateDto(createUser));
     }
 
+
+
+
     @Override
-    //TODO : Prevent duplicate emails and users during pdate
+
     public User updateUser(UpdateUserDto updateUser) {
 
-        Authentication authenticated= SecurityContextHolder.getContext().getAuthentication();
-        String email = authenticated.getName();
-        User user = userRepo.findByEmail(email).orElseThrow(()-> new UserNotFoundByEmailOrUsername(email));
+        User user = getCurrentUser();
         updateFromDto(user , updateUser);
         if (updateUser.password() !=null) {
             updatePassword(user , updateUser.password());
@@ -47,12 +50,9 @@ public class UserService implements IUserService {
     }
 
     @Override
-    //TODO : Simplify with getCurrentUser
+
     public void deleteUser() {
-        Authentication authentication =SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        User user = userRepo.findByEmail(email).orElseThrow(() -> new UserNotFoundByEmailOrUsername(email));
-        userRepo.delete(user);
+        userRepo.delete(getCurrentUser());
     }
 
     @Override
@@ -65,6 +65,14 @@ public class UserService implements IUserService {
 
 
     private User fromCreateDto(CreateUserDto dto) {
+        if (userRepo.existsByEmail(dto.email())) {
+            throw new EmailAlreadyUsed("This email is used");
+        }
+
+        if(userRepo.existsByUserName(dto.userName())) {
+            throw new UsernameAlreadyUsed("Username is already used");
+        }
+
         User user = new User();
         user.setEmail(dto.email());
         user.setUserName(dto.userName());
@@ -75,10 +83,17 @@ public class UserService implements IUserService {
     private void updateFromDto(User user, UpdateUserDto dto) {
 
         if (dto.email() != null) {
+            if (userRepo.existsByEmailAndIdNot(dto.email(), user.getId())) {
+                throw new EmailAlreadyUsed("This email is used");
+            }
             user.setEmail(dto.email());
         }
 
-        if (dto.userName() != null) {
+        if(dto.userName() != null) {
+
+            if(userRepo.existsByUserNameAndIdNot(dto.userName(), user.getId())) {
+                throw new UsernameAlreadyUsed("Username is already used");
+            }
             user.setUserName(dto.userName());
         }
     }
