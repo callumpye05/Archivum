@@ -31,6 +31,7 @@ public class User {
     @Column(name="created_at" , nullable = false)
     private Instant createdAt;
 
+
     @PrePersist
     protected void setTime() {
         createdAt = Instant.now();

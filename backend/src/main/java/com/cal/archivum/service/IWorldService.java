@@ -3,6 +3,7 @@ package com.cal.archivum.service;
 import com.cal.archivum.dto.WorldDto;
 import com.cal.archivum.dto.impl.CreateWorldDto;
 import com.cal.archivum.dto.impl.UpdateWorldDto;
+import com.cal.archivum.entity.User;
 import com.cal.archivum.entity.World;
 
 import java.util.List;

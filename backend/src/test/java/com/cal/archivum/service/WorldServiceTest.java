@@ -4,7 +4,9 @@ import com.cal.archivum.dto.impl.CreateWorldDto;
 import com.cal.archivum.dto.impl.UpdateWorldDto;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.exception.WorldNotFound;
+import com.cal.archivum.repository.UserRepository;
 import com.cal.archivum.repository.WorldRepository;
+import com.cal.archivum.service.impl.UserService;
 import com.cal.archivum.service.impl.WorldService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,13 +27,14 @@ class WorldServiceTest {
     private WorldRepository worldRepo;
 
     private WorldService worldService;
+    private UserService userService;
 
     private World testWorld;
 
     @BeforeEach
     void setUp() {
 
-        worldService = new WorldService(worldRepo);
+        worldService = new WorldService(worldRepo , userService);
 
         testWorld = new World();
         testWorld.setWorldId(1L);
