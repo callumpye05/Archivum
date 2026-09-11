@@ -28,7 +28,6 @@ public class UserService implements IUserService {
 
 
     @Override
-
     public User createUser(CreateUserDto createUser) {
         return userRepo.save(fromCreateDto(createUser));
     }
@@ -57,10 +56,14 @@ public class UserService implements IUserService {
 
     @Override
     public User getCurrentUser() {
-        Authentication authentication =SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
 
-        return userRepo.findByEmail(email).orElseThrow(() -> new UserNotFoundByEmailOrUsername(email));
+        String userName = authentication.getName();
+
+        return userRepo.findByUserName(userName)
+                .orElseThrow(() ->
+                        new UserNotFoundByEmailOrUsername(userName));
     }
 
 
