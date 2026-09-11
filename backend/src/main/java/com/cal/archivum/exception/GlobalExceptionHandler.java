@@ -35,4 +35,21 @@ public class GlobalExceptionHandler {
 
     }
 
+    @ExceptionHandler (UserNotFound.class)
+    public ResponseEntity<String> handleUserNotFound(UserNotFound ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+    @ExceptionHandler (UsernameAlreadyUsed.class)
+    public ResponseEntity<String> handleUsernameAlreadyUsed(UsernameAlreadyUsed ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler (UserNotFoundByEmailOrUsername.class)
+    public ResponseEntity<String> handleUserNotFoundByEmailOrUsername (UserNotFoundByEmailOrUsername ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+
+
 }
