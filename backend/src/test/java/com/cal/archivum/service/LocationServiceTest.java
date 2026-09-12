@@ -1,10 +1,9 @@
 package com.cal.archivum.service;
 
-
-
 import com.cal.archivum.dto.impl.CreateLocationDto;
 import com.cal.archivum.dto.impl.UpdateLocationDto;
 import com.cal.archivum.entity.Location;
+import com.cal.archivum.entity.User;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.enums.LocationType;
 import com.cal.archivum.exception.LocationNotFound;
@@ -13,10 +12,10 @@ import com.cal.archivum.exception.WorldNotFound;
 import com.cal.archivum.repository.LocationRepository;
 import com.cal.archivum.repository.WorldRepository;
 import com.cal.archivum.service.impl.LocationService;
-import com.cal.archivum.service.impl.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -35,9 +34,12 @@ class LocationServiceTest {
     @Mock
     private WorldRepository worldRepository;
 
-    private LocationService locationService;
-    private UserService userService;
+    @Mock
+    private IUserService userService;
 
+    private LocationService locationService;
+
+    private User testUser;
     private World testWorld;
     private Location testLocation;
 
@@ -45,11 +47,19 @@ class LocationServiceTest {
     void setUp() {
 
         locationService =
-                new LocationService(locationRepository, worldRepository , userService);
+                new LocationService(
+                        locationRepository,
+                        worldRepository,
+                        userService
+                );
+
+        testUser = new User();
+        testUser.setUserName("test_user");
 
         testWorld = new World();
         testWorld.setWorldId(2L);
         testWorld.setWorldName("Eisenmark");
+        testWorld.setOwner(testUser);
 
         testLocation = new Location();
         testLocation.setId(10L);
@@ -67,33 +77,46 @@ class LocationServiceTest {
     // =========================================================
 
     @Test
-    void getLocation_shouldReturnLocation_whenLocationExists() {
+    void getLocation_shouldReturnLocation_whenOwnedByCurrentUser() {
 
-        when(locationRepository.findById(10L))
-                .thenReturn(Optional.of(testLocation));
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
 
-        Location result = locationService.getLocation(10L);
+        when(locationRepository.findByIdAndWorldOwner(
+                10L,
+                testUser
+        )).thenReturn(Optional.of(testLocation));
+
+        Location result =
+                locationService.getLocation(10L);
 
         assertNotNull(result);
         assertEquals(10L, result.getId());
         assertEquals("Ironspire", result.getLocationName());
         assertEquals(LocationType.CITY, result.getLocationType());
 
-        verify(locationRepository).findById(10L);
+        verify(locationRepository)
+                .findByIdAndWorldOwner(10L, testUser);
     }
 
     @Test
-    void getLocation_shouldThrowLocationNotFound_whenLocationDoesNotExist() {
+    void getLocation_shouldThrow_whenLocationNotAccessibleToCurrentUser() {
 
-        when(locationRepository.findById(99L))
-                .thenReturn(Optional.empty());
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(locationRepository.findByIdAndWorldOwner(
+                99L,
+                testUser
+        )).thenReturn(Optional.empty());
 
         assertThrows(
                 LocationNotFound.class,
                 () -> locationService.getLocation(99L)
         );
 
-        verify(locationRepository).findById(99L);
+        verify(locationRepository)
+                .findByIdAndWorldOwner(99L, testUser);
     }
 
 
@@ -102,7 +125,7 @@ class LocationServiceTest {
     // =========================================================
 
     @Test
-    void getAllLocationsByWorld_shouldReturnLocations_whenWorldExists() {
+    void getAllLocationsByWorld_shouldReturnLocations_whenUserOwnsWorld() {
 
         Location secondLocation = new Location();
         secondLocation.setId(11L);
@@ -110,8 +133,13 @@ class LocationServiceTest {
         secondLocation.setLocationType(LocationType.FACILITY);
         secondLocation.setWorld(testWorld);
 
-        when(worldRepository.findById(2L))
-                .thenReturn(Optional.of(testWorld));
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(worldRepository.findByWorldIdAndOwner(
+                2L,
+                testUser
+        )).thenReturn(Optional.of(testWorld));
 
         when(locationRepository.findAllByWorld(testWorld))
                 .thenReturn(List.of(testLocation, secondLocation));
@@ -120,18 +148,29 @@ class LocationServiceTest {
                 locationService.getAllLocationsByWorld(2L);
 
         assertEquals(2, result.size());
-        assertEquals("Ironspire", result.get(0).getLocationName());
-        assertEquals("Kronen Works", result.get(1).getLocationName());
+        assertEquals("Ironspire",
+                result.get(0).getLocationName());
 
-        verify(worldRepository).findById(2L);
-        verify(locationRepository).findAllByWorld(testWorld);
+        assertEquals("Kronen Works",
+                result.get(1).getLocationName());
+
+        verify(worldRepository)
+                .findByWorldIdAndOwner(2L, testUser);
+
+        verify(locationRepository)
+                .findAllByWorld(testWorld);
     }
 
     @Test
-    void getAllLocationsByWorld_shouldReturnEmptyList_whenWorldExistsButHasNoLocations() {
+    void getAllLocationsByWorld_shouldReturnEmptyList_whenOwnedWorldHasNoLocations() {
 
-        when(worldRepository.findById(2L))
-                .thenReturn(Optional.of(testWorld));
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(worldRepository.findByWorldIdAndOwner(
+                2L,
+                testUser
+        )).thenReturn(Optional.of(testWorld));
 
         when(locationRepository.findAllByWorld(testWorld))
                 .thenReturn(List.of());
@@ -142,21 +181,25 @@ class LocationServiceTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
 
-        verify(locationRepository).findAllByWorld(testWorld);
+        verify(locationRepository)
+                .findAllByWorld(testWorld);
     }
 
     @Test
-    void getAllLocationsByWorld_shouldThrowWorldNotFound_whenWorldDoesNotExist() {
+    void getAllLocationsByWorld_shouldThrow_whenWorldNotOwnedByCurrentUser() {
 
-        when(worldRepository.findById(99L))
-                .thenReturn(Optional.empty());
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(worldRepository.findByWorldIdAndOwner(
+                99L,
+                testUser
+        )).thenReturn(Optional.empty());
 
         assertThrows(
                 WorldNotFound.class,
                 () -> locationService.getAllLocationsByWorld(99L)
         );
-
-        verify(worldRepository).findById(99L);
 
         verify(locationRepository, never())
                 .findAllByWorld(any());
@@ -168,9 +211,17 @@ class LocationServiceTest {
     // =========================================================
 
     @Test
-    void getLocationByWorldId_shouldReturnLocation_whenLocationBelongsToWorld() {
+    void getLocationByWorldId_shouldReturnLocation_whenWorldAndOwnerMatch() {
 
-        when(locationRepository.findByIdAndWorldWorldId(10L, 2L))
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(locationRepository
+                .findByIdAndWorldWorldIdAndWorldOwner(
+                        10L,
+                        2L,
+                        testUser
+                ))
                 .thenReturn(Optional.of(testLocation));
 
         Location result =
@@ -181,22 +232,32 @@ class LocationServiceTest {
         assertEquals(2L, result.getWorld().getWorldId());
 
         verify(locationRepository)
-                .findByIdAndWorldWorldId(10L, 2L);
+                .findByIdAndWorldWorldIdAndWorldOwner(
+                        10L,
+                        2L,
+                        testUser
+                );
     }
 
     @Test
-    void getLocationByWorldId_shouldThrow_whenLocationDoesNotBelongToWorld() {
+    void getLocationByWorldId_shouldThrow_whenLocationNotAccessibleThroughWorld() {
 
-        when(locationRepository.findByIdAndWorldWorldId(10L, 3L))
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(locationRepository
+                .findByIdAndWorldWorldIdAndWorldOwner(
+                        10L,
+                        3L,
+                        testUser
+                ))
                 .thenReturn(Optional.empty());
 
         assertThrows(
                 LocationNotFoundByWorld.class,
-                () -> locationService.getLocationByWorldId(3L, 10L)
+                () -> locationService
+                        .getLocationByWorldId(3L, 10L)
         );
-
-        verify(locationRepository)
-                .findByIdAndWorldWorldId(10L, 3L);
     }
 
 
@@ -205,20 +266,27 @@ class LocationServiceTest {
     // =========================================================
 
     @Test
-    void createLocation_shouldSaveLocation_whenWorldExists() {
+    void createLocation_shouldSaveLocation_whenUserOwnsWorld() {
 
-        CreateLocationDto dto = new CreateLocationDto(
-                "Ironspire",
-                LocationType.CITY,
-                "A large industrial city."
-        );
+        CreateLocationDto dto =
+                new CreateLocationDto(
+                        "Ironspire",
+                        LocationType.CITY,
+                        "A large industrial city."
+                );
 
-        when(worldRepository.findById(2L))
-                .thenReturn(Optional.of(testWorld));
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(worldRepository.findByWorldIdAndOwner(
+                2L,
+                testUser
+        )).thenReturn(Optional.of(testWorld));
 
         when(locationRepository.save(any(Location.class)))
                 .thenAnswer(invocation -> {
-                    Location location = invocation.getArgument(0);
+                    Location location =
+                            invocation.getArgument(0);
                     location.setId(10L);
                     return location;
                 });
@@ -227,28 +295,43 @@ class LocationServiceTest {
                 locationService.createLocation(dto, 2L);
 
         assertNotNull(result);
-        assertEquals("Ironspire", result.getLocationName());
-        assertEquals(LocationType.CITY, result.getLocationType());
-        assertEquals("A large industrial city.",
-                result.getLocationDescription());
+        assertEquals("Ironspire",
+                result.getLocationName());
 
-        assertEquals(testWorld, result.getWorld());
+        assertEquals(LocationType.CITY,
+                result.getLocationType());
 
-        verify(worldRepository).findById(2L);
-        verify(locationRepository).save(any(Location.class));
+        assertEquals(
+                "A large industrial city.",
+                result.getLocationDescription()
+        );
+
+        assertSame(testWorld, result.getWorld());
+
+        verify(worldRepository)
+                .findByWorldIdAndOwner(2L, testUser);
+
+        verify(locationRepository)
+                .save(any(Location.class));
     }
 
     @Test
-    void createLocation_shouldThrowWorldNotFound_whenWorldDoesNotExist() {
+    void createLocation_shouldThrow_whenUserDoesNotOwnWorld() {
 
-        CreateLocationDto dto = new CreateLocationDto(
-                "Ironspire",
-                LocationType.CITY,
-                "A large industrial city."
-        );
+        CreateLocationDto dto =
+                new CreateLocationDto(
+                        "Ironspire",
+                        LocationType.CITY,
+                        "A large industrial city."
+                );
 
-        when(worldRepository.findById(99L))
-                .thenReturn(Optional.empty());
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(worldRepository.findByWorldIdAndOwner(
+                99L,
+                testUser
+        )).thenReturn(Optional.empty());
 
         assertThrows(
                 WorldNotFound.class,
@@ -265,16 +348,22 @@ class LocationServiceTest {
     // =========================================================
 
     @Test
-    void updateLocation_shouldUpdateProvidedFields() {
+    void updateLocation_shouldUpdateProvidedFields_whenOwnedByUser() {
 
-        UpdateLocationDto dto = new UpdateLocationDto(
-                "Ironspire Prime",
-                LocationType.DISTRICT,
-                "Updated location description."
-        );
+        UpdateLocationDto dto =
+                new UpdateLocationDto(
+                        "Ironspire Prime",
+                        LocationType.DISTRICT,
+                        "Updated location description."
+                );
 
-        when(locationRepository.findById(10L))
-                .thenReturn(Optional.of(testLocation));
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(locationRepository.findByIdAndWorldOwner(
+                10L,
+                testUser
+        )).thenReturn(Optional.of(testLocation));
 
         when(locationRepository.save(testLocation))
                 .thenReturn(testLocation);
@@ -282,30 +371,42 @@ class LocationServiceTest {
         Location result =
                 locationService.updateLocation(10L, dto);
 
-        assertEquals("Ironspire Prime", result.getLocationName());
+        assertEquals(
+                "Ironspire Prime",
+                result.getLocationName()
+        );
+
         assertEquals(
                 LocationType.DISTRICT,
                 result.getLocationType()
         );
+
         assertEquals(
                 "Updated location description.",
                 result.getLocationDescription()
         );
 
-        verify(locationRepository).save(testLocation);
+        verify(locationRepository)
+                .save(testLocation);
     }
 
     @Test
     void updateLocation_shouldOnlyUpdateNonNullFields() {
 
-        UpdateLocationDto dto = new UpdateLocationDto(
-                null,
-                LocationType.LANDMARK,
-                null
-        );
+        UpdateLocationDto dto =
+                new UpdateLocationDto(
+                        null,
+                        LocationType.LANDMARK,
+                        null
+                );
 
-        when(locationRepository.findById(10L))
-                .thenReturn(Optional.of(testLocation));
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(locationRepository.findByIdAndWorldOwner(
+                10L,
+                testUser
+        )).thenReturn(Optional.of(testLocation));
 
         when(locationRepository.save(testLocation))
                 .thenReturn(testLocation);
@@ -313,34 +414,47 @@ class LocationServiceTest {
         Location result =
                 locationService.updateLocation(10L, dto);
 
-        assertEquals("Ironspire", result.getLocationName());
-        assertEquals(LocationType.LANDMARK, result.getLocationType());
+        assertEquals(
+                "Ironspire",
+                result.getLocationName()
+        );
+
+        assertEquals(
+                LocationType.LANDMARK,
+                result.getLocationType()
+        );
+
         assertEquals(
                 "A large industrial city.",
                 result.getLocationDescription()
         );
-
-        verify(locationRepository).save(testLocation);
     }
 
     @Test
-    void updateLocation_shouldThrowLocationNotFound_whenLocationDoesNotExist() {
+    void updateLocation_shouldThrow_whenLocationNotOwnedByCurrentUser() {
 
-        UpdateLocationDto dto = new UpdateLocationDto(
-                "Updated",
-                LocationType.CITY,
-                "Updated"
-        );
+        UpdateLocationDto dto =
+                new UpdateLocationDto(
+                        "Updated",
+                        LocationType.CITY,
+                        "Updated"
+                );
 
-        when(locationRepository.findById(99L))
-                .thenReturn(Optional.empty());
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(locationRepository.findByIdAndWorldOwner(
+                99L,
+                testUser
+        )).thenReturn(Optional.empty());
 
         assertThrows(
                 LocationNotFound.class,
                 () -> locationService.updateLocation(99L, dto)
         );
 
-        verify(locationRepository, never()).save(any());
+        verify(locationRepository, never())
+                .save(any());
     }
 
 
@@ -349,22 +463,35 @@ class LocationServiceTest {
     // =========================================================
 
     @Test
-    void deleteLocation_shouldDeleteLocation_whenLocationExists() {
+    void deleteLocation_shouldDelete_whenLocationOwnedByCurrentUser() {
 
-        when(locationRepository.findById(10L))
-                .thenReturn(Optional.of(testLocation));
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(locationRepository.findByIdAndWorldOwner(
+                10L,
+                testUser
+        )).thenReturn(Optional.of(testLocation));
 
         locationService.deleteLocation(10L);
 
-        verify(locationRepository).findById(10L);
-        verify(locationRepository).deleteById(10L);
+        verify(locationRepository)
+                .findByIdAndWorldOwner(10L, testUser);
+
+        verify(locationRepository)
+                .delete(testLocation);
     }
 
     @Test
-    void deleteLocation_shouldThrowLocationNotFound_whenLocationDoesNotExist() {
+    void deleteLocation_shouldThrow_whenLocationNotOwnedByCurrentUser() {
 
-        when(locationRepository.findById(99L))
-                .thenReturn(Optional.empty());
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(locationRepository.findByIdAndWorldOwner(
+                99L,
+                testUser
+        )).thenReturn(Optional.empty());
 
         assertThrows(
                 LocationNotFound.class,
@@ -372,7 +499,7 @@ class LocationServiceTest {
         );
 
         verify(locationRepository, never())
-                .deleteById(anyLong());
+                .delete(any(Location.class));
     }
 
 
@@ -383,24 +510,31 @@ class LocationServiceTest {
     @Test
     void transformFromDto_shouldCreateLocationWithCorrectWorld() {
 
-        CreateLocationDto dto = new CreateLocationDto(
-                "Ironspire",
-                LocationType.CITY,
-                "A large industrial city."
-        );
-
-        when(worldRepository.findById(2L))
-                .thenReturn(Optional.of(testWorld));
+        CreateLocationDto dto =
+                new CreateLocationDto(
+                        "Ironspire",
+                        LocationType.CITY,
+                        "A large industrial city."
+                );
 
         Location result =
-                locationService.transformFromDto(dto, 2L);
+                locationService.transformFromDto(dto, testWorld);
 
-        assertEquals("Ironspire", result.getLocationName());
-        assertEquals(LocationType.CITY, result.getLocationType());
+        assertEquals(
+                "Ironspire",
+                result.getLocationName()
+        );
+
+        assertEquals(
+                LocationType.CITY,
+                result.getLocationType()
+        );
+
         assertEquals(
                 "A large industrial city.",
                 result.getLocationDescription()
         );
-        assertEquals(testWorld, result.getWorld());
+
+        assertSame(testWorld, result.getWorld());
     }
 }
