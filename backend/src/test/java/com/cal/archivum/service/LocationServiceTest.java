@@ -13,6 +13,7 @@ import com.cal.archivum.exception.WorldNotFound;
 import com.cal.archivum.repository.LocationRepository;
 import com.cal.archivum.repository.WorldRepository;
 import com.cal.archivum.service.impl.LocationService;
+import com.cal.archivum.service.impl.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +36,7 @@ class LocationServiceTest {
     private WorldRepository worldRepository;
 
     private LocationService locationService;
+    private UserService userService;
 
     private World testWorld;
     private Location testLocation;
@@ -43,7 +45,7 @@ class LocationServiceTest {
     void setUp() {
 
         locationService =
-                new LocationService(locationRepository, worldRepository);
+                new LocationService(locationRepository, worldRepository , userService);
 
         testWorld = new World();
         testWorld.setWorldId(2L);
