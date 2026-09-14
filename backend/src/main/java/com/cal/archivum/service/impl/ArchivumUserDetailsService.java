@@ -21,47 +21,14 @@ public class ArchivumUserDetailsService implements UserDetailsService {
         this.userRepository = userRepository;
     }
 
-    /*
-    @Override
-    public UserDetails loadUserByUsername(String identifier) {
 
-        User user = userRepository
-                .findByUserNameOrEmail(identifier, identifier)
-                .orElseThrow(() ->
-                        new UserNotFoundByEmailOrUsername(identifier));
-
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getUserName())
-                .password(user.getUserHashedPassword())
-                .roles("USER")
-                .build();
-    }
-     */
 
     @Override
     public UserDetails loadUserByUsername(String identifier) {
 
-        System.out.println("SECURITY: attempting login with " + identifier);
-
         User user = userRepository
-                .findByUserNameOrEmail(identifier, identifier)
-                .orElseThrow(() ->
-                        new UserNotFoundByEmailOrUsername(identifier));
-
-        System.out.println("SECURITY: found " + user.getUserName());
-        System.out.println(
-                "SECURITY: password format = "
-                        + user.getUserHashedPassword().substring(
-                        0,
-                        Math.min(10, user.getUserHashedPassword().length())
-                )
-        );
-
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getUserName())
-                .password(user.getUserHashedPassword())
-                .roles("USER")
-                .build();
+                .findByUserNameOrEmail(identifier, identifier).orElseThrow(() -> new UserNotFoundByEmailOrUsername(identifier));
+        return org.springframework.security.core.userdetails.User.withUsername(user.getUserName()).password(user.getUserHashedPassword()).roles("USER").build();
     }
 
 }

@@ -18,6 +18,9 @@ public class World {
     @Column(name = "world_id" ,nullable = false)
     private Long worldId;
 
+
+
+
     @Column(name = "world_name" ,nullable = false)
     private String worldName;
 
@@ -28,6 +31,9 @@ public class World {
     @Column(name = "created_at")
     private Instant createdAt;
 
+    @JoinColumn(name = "user_id" , nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    private User owner;
 
     @PrePersist
     protected void setTime() {

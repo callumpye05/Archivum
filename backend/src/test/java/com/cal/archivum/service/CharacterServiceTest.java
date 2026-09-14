@@ -2,6 +2,7 @@ package com.cal.archivum.service;
 
 import com.cal.archivum.dto.impl.CreateCharacterDto;
 import com.cal.archivum.dto.impl.UpdateCharacterDto;
+import com.cal.archivum.entity.User;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.entity.WorldCharacter;
 import com.cal.archivum.exception.CharacterNotFound;
@@ -31,19 +32,32 @@ class CharacterServiceTest {
     @Mock
     private WorldRepository worldRepo;
 
+    @Mock
+    private IUserService userService;
+
     private CharacterService characterService;
 
+    private User testUser;
     private World testWorld;
     private WorldCharacter testCharacter;
 
     @BeforeEach
     void setUp() {
 
-        characterService = new CharacterService(characterRepo, worldRepo);
+        characterService =
+                new CharacterService(
+                        characterRepo,
+                        worldRepo,
+                        userService
+                );
+
+        testUser = new User();
+        testUser.setUserName("test_user");
 
         testWorld = new World();
         testWorld.setWorldId(2L);
         testWorld.setWorldName("Eisenmark");
+        testWorld.setOwner(testUser);
 
         testCharacter = new WorldCharacter();
         testCharacter.setCharacterId(10L);
@@ -55,37 +69,60 @@ class CharacterServiceTest {
         testCharacter.setWorld(testWorld);
     }
 
+
     // =========================================================
     // GET CHARACTER
     // =========================================================
 
     @Test
-    void getCharacter_shouldReturnCharacter_whenCharacterExists() {
+    void getCharacter_shouldReturnCharacter_whenOwnedByCurrentUser() {
 
-        when(characterRepo.findById(10L))
-                .thenReturn(Optional.of(testCharacter));
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
 
-        WorldCharacter result = characterService.getCharacter(10L);
+        when(characterRepo.findByCharacterIdAndWorldOwner(
+                10L,
+                testUser
+        )).thenReturn(Optional.of(testCharacter));
+
+        WorldCharacter result =
+                characterService.getCharacter(10L);
 
         assertNotNull(result);
         assertEquals(10L, result.getCharacterId());
-        assertEquals("Lucian Varek", result.getCharacterName());
+        assertEquals(
+                "Lucian Varek",
+                result.getCharacterName()
+        );
 
-        verify(characterRepo).findById(10L);
+        verify(characterRepo)
+                .findByCharacterIdAndWorldOwner(
+                        10L,
+                        testUser
+                );
     }
 
     @Test
-    void getCharacter_shouldThrowCharacterNotFound_whenCharacterDoesNotExist() {
+    void getCharacter_shouldThrow_whenCharacterNotAccessibleToCurrentUser() {
 
-        when(characterRepo.findById(99L))
-                .thenReturn(Optional.empty());
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(characterRepo.findByCharacterIdAndWorldOwner(
+                99L,
+                testUser
+        )).thenReturn(Optional.empty());
 
         assertThrows(
                 CharacterNotFound.class,
                 () -> characterService.getCharacter(99L)
         );
 
-        verify(characterRepo).findById(99L);
+        verify(characterRepo)
+                .findByCharacterIdAndWorldOwner(
+                        99L,
+                        testUser
+                );
     }
 
 
@@ -94,45 +131,99 @@ class CharacterServiceTest {
     // =========================================================
 
     @Test
-    void getAllCharactersFromWorld_shouldReturnCharacters_whenWorldExists() {
+    void getAllCharactersFromWorld_shouldReturnCharacters_whenUserOwnsWorld() {
 
-        WorldCharacter secondCharacter = new WorldCharacter();
+        WorldCharacter secondCharacter =
+                new WorldCharacter();
+
         secondCharacter.setCharacterId(11L);
         secondCharacter.setCharacterName("Mira Kohl");
         secondCharacter.setWorld(testWorld);
 
-        when(worldRepo.findById(2L))
-                .thenReturn(Optional.of(testWorld));
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(worldRepo.findByWorldIdAndOwner(
+                2L,
+                testUser
+        )).thenReturn(Optional.of(testWorld));
 
         when(characterRepo.findAllByWorld(testWorld))
-                .thenReturn(List.of(testCharacter, secondCharacter));
+                .thenReturn(List.of(
+                        testCharacter,
+                        secondCharacter
+                ));
 
         List<WorldCharacter> result =
-                characterService.getAllCharactersFromWorld(2L);
+                characterService
+                        .getAllCharactersFromWorld(2L);
 
         assertEquals(2, result.size());
-        assertEquals("Lucian Varek", result.get(0).getCharacterName());
-        assertEquals("Mira Kohl", result.get(1).getCharacterName());
 
-        verify(worldRepo).findById(2L);
-        verify(characterRepo).findAllByWorld(testWorld);
+        assertEquals(
+                "Lucian Varek",
+                result.get(0).getCharacterName()
+        );
+
+        assertEquals(
+                "Mira Kohl",
+                result.get(1).getCharacterName()
+        );
+
+        verify(worldRepo)
+                .findByWorldIdAndOwner(
+                        2L,
+                        testUser
+                );
+
+        verify(characterRepo)
+                .findAllByWorld(testWorld);
     }
 
     @Test
-    void getAllCharactersFromWorld_shouldThrowWorldNotFound_whenWorldDoesNotExist() {
+    void getAllCharactersFromWorld_shouldReturnEmptyList_whenOwnedWorldHasNoCharacters() {
 
-        when(worldRepo.findById(99L))
-                .thenReturn(Optional.empty());
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(worldRepo.findByWorldIdAndOwner(
+                2L,
+                testUser
+        )).thenReturn(Optional.of(testWorld));
+
+        when(characterRepo.findAllByWorld(testWorld))
+                .thenReturn(List.of());
+
+        List<WorldCharacter> result =
+                characterService
+                        .getAllCharactersFromWorld(2L);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        verify(characterRepo)
+                .findAllByWorld(testWorld);
+    }
+
+    @Test
+    void getAllCharactersFromWorld_shouldThrow_whenWorldNotOwnedByCurrentUser() {
+
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(worldRepo.findByWorldIdAndOwner(
+                99L,
+                testUser
+        )).thenReturn(Optional.empty());
 
         assertThrows(
                 WorldNotFound.class,
-                () -> characterService.getAllCharactersFromWorld(99L)
+                () -> characterService
+                        .getAllCharactersFromWorld(99L)
         );
 
-        verify(worldRepo).findById(99L);
-
-        // Important: repository should never be queried for characters
-        verify(characterRepo, never()).findAllByWorld(any());
+        verify(characterRepo, never())
+                .findAllByWorld(any());
     }
 
 
@@ -141,35 +232,61 @@ class CharacterServiceTest {
     // =========================================================
 
     @Test
-    void getCharacterByWorldId_shouldReturnCharacter_whenCharacterBelongsToWorld() {
+    void getCharacterByWorldId_shouldReturnCharacter_whenWorldAndOwnerMatch() {
 
-        when(characterRepo.findByCharacterIdAndWorldWorldId(10L, 2L))
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(characterRepo
+                .findByCharacterIdAndWorldWorldIdAndWorldOwner(
+                        10L,
+                        2L,
+                        testUser
+                ))
                 .thenReturn(Optional.of(testCharacter));
 
         WorldCharacter result =
-                characterService.getCharacterByWorldId(2L, 10L);
+                characterService
+                        .getCharacterByWorldId(2L, 10L);
 
         assertNotNull(result);
-        assertEquals(10L, result.getCharacterId());
-        assertEquals(2L, result.getWorld().getWorldId());
+        assertEquals(
+                10L,
+                result.getCharacterId()
+        );
+
+        assertEquals(
+                2L,
+                result.getWorld().getWorldId()
+        );
 
         verify(characterRepo)
-                .findByCharacterIdAndWorldWorldId(10L, 2L);
+                .findByCharacterIdAndWorldWorldIdAndWorldOwner(
+                        10L,
+                        2L,
+                        testUser
+                );
     }
 
     @Test
-    void getCharacterByWorldId_shouldThrow_whenCharacterDoesNotBelongToWorld() {
+    void getCharacterByWorldId_shouldThrow_whenCharacterNotAccessibleThroughWorld() {
 
-        when(characterRepo.findByCharacterIdAndWorldWorldId(10L, 3L))
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(characterRepo
+                .findByCharacterIdAndWorldWorldIdAndWorldOwner(
+                        10L,
+                        3L,
+                        testUser
+                ))
                 .thenReturn(Optional.empty());
 
         assertThrows(
                 CharacterNotFoundByWorld.class,
-                () -> characterService.getCharacterByWorldId(3L, 10L)
+                () -> characterService
+                        .getCharacterByWorldId(3L, 10L)
         );
-
-        verify(characterRepo)
-                .findByCharacterIdAndWorldWorldId(10L, 3L);
     }
 
 
@@ -178,62 +295,110 @@ class CharacterServiceTest {
     // =========================================================
 
     @Test
-    void createCharacter_shouldSaveCharacter_whenWorldExists() {
+    void createCharacter_shouldSaveCharacter_whenUserOwnsWorld() {
 
-        /*
-         * Adjust this constructor if your CreateCharacterDto
-         * fields are ordered differently.
-         */
-        CreateCharacterDto dto = new CreateCharacterDto(
-                "Lucian Varek",
-                "Human",
-                34,
-                "Test character",
-                "Eisenmarkian"
-        );
+        CreateCharacterDto dto =
+                new CreateCharacterDto(
+                        "Lucian Varek",
+                        "Human",
+                        34,
+                        "Test character",
+                        "Eisenmarkian"
+                );
 
-        when(worldRepo.findById(2L))
-                .thenReturn(Optional.of(testWorld));
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
 
-        when(characterRepo.save(any(WorldCharacter.class)))
+        when(worldRepo.findByWorldIdAndOwner(
+                2L,
+                testUser
+        )).thenReturn(Optional.of(testWorld));
+
+        when(characterRepo.save(
+                any(WorldCharacter.class)
+        ))
                 .thenAnswer(invocation -> {
-                    WorldCharacter character = invocation.getArgument(0);
+                    WorldCharacter character =
+                            invocation.getArgument(0);
+
                     character.setCharacterId(10L);
                     return character;
                 });
 
         WorldCharacter result =
-                characterService.createCharacter(dto, 2L);
+                characterService
+                        .createCharacter(dto, 2L);
 
         assertNotNull(result);
-        assertEquals("Lucian Varek", result.getCharacterName());
-        assertEquals("Human", result.getCharacterSpecies());
-        assertEquals(34, result.getAge());
-        assertEquals(testWorld, result.getWorld());
 
-        verify(characterRepo).save(any(WorldCharacter.class));
+        assertEquals(
+                "Lucian Varek",
+                result.getCharacterName()
+        );
+
+        assertEquals(
+                "Human",
+                result.getCharacterSpecies()
+        );
+
+        assertEquals(
+                34,
+                result.getAge()
+        );
+
+        assertEquals(
+                "Eisenmarkian",
+                result.getCharacterNationality()
+        );
+
+        assertEquals(
+                "Test character",
+                result.getCharacterDescription()
+        );
+
+        assertSame(
+                testWorld,
+                result.getWorld()
+        );
+
+        verify(worldRepo)
+                .findByWorldIdAndOwner(
+                        2L,
+                        testUser
+                );
+
+        verify(characterRepo)
+                .save(any(WorldCharacter.class));
     }
 
     @Test
-    void createCharacter_shouldThrowWorldNotFound_whenWorldDoesNotExist() {
+    void createCharacter_shouldThrow_whenUserDoesNotOwnWorld() {
 
-        CreateCharacterDto dto = new CreateCharacterDto(
-                "Lucian Varek",
-                "Human",
-                34,
-                "Test character",
-                "Eisenmarkian"
-        );
+        CreateCharacterDto dto =
+                new CreateCharacterDto(
+                        "Lucian Varek",
+                        "Human",
+                        34,
+                        "Test character",
+                        "Eisenmarkian"
+                );
 
-        when(worldRepo.findById(99L))
-                .thenReturn(Optional.empty());
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(worldRepo.findByWorldIdAndOwner(
+                99L,
+                testUser
+        )).thenReturn(Optional.empty());
 
         assertThrows(
                 WorldNotFound.class,
-                () -> characterService.createCharacter(dto, 99L)
+                () -> characterService
+                        .createCharacter(dto, 99L)
         );
 
-        verify(characterRepo, never()).save(any());
+        verify(characterRepo, never())
+                .save(any());
     }
 
 
@@ -242,56 +407,149 @@ class CharacterServiceTest {
     // =========================================================
 
     @Test
-    void updateCharacter_shouldUpdateProvidedFields() {
+    void updateCharacter_shouldUpdateProvidedFields_whenOwnedByCurrentUser() {
 
-        UpdateCharacterDto dto = new UpdateCharacterDto(
-                "Lucian Updated",
-                null,
-                35,
-                "Updated description",
-                null
-        );
+        UpdateCharacterDto dto =
+                new UpdateCharacterDto(
+                        "Lucian Updated",
+                        null,
+                        35,
+                        "Updated description",
+                        null
+                );
 
-        when(characterRepo.findById(10L))
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(characterRepo
+                .findByCharacterIdAndWorldOwner(
+                        10L,
+                        testUser
+                ))
                 .thenReturn(Optional.of(testCharacter));
 
         when(characterRepo.save(testCharacter))
                 .thenReturn(testCharacter);
 
         WorldCharacter result =
-                characterService.updateCharacter(10L, dto);
+                characterService
+                        .updateCharacter(10L, dto);
 
-        assertEquals("Lucian Updated", result.getCharacterName());
-        assertEquals(35, result.getAge());
-        assertEquals("Updated description", result.getCharacterDescription());
+        assertEquals(
+                "Lucian Updated",
+                result.getCharacterName()
+        );
 
-        // Existing fields should remain untouched when DTO values are null
-        assertEquals("Human", result.getCharacterSpecies());
-        assertEquals("Eisenmarkian", result.getCharacterNationality());
+        assertEquals(
+                35,
+                result.getAge()
+        );
 
-        verify(characterRepo).save(testCharacter);
+        assertEquals(
+                "Updated description",
+                result.getCharacterDescription()
+        );
+
+        // Null fields remain untouched
+        assertEquals(
+                "Human",
+                result.getCharacterSpecies()
+        );
+
+        assertEquals(
+                "Eisenmarkian",
+                result.getCharacterNationality()
+        );
+
+        verify(characterRepo)
+                .save(testCharacter);
     }
 
     @Test
-    void updateCharacter_shouldThrowCharacterNotFound_whenCharacterDoesNotExist() {
+    void updateCharacter_shouldOnlyUpdateNonNullFields() {
 
-        UpdateCharacterDto dto = new UpdateCharacterDto(
-                "Updated",
-                null,
-                null,
-                null,
-                null
+        UpdateCharacterDto dto =
+                new UpdateCharacterDto(
+                        null,
+                        "Half-Devil",
+                        null,
+                        null,
+                        "Alta-Rivan"
+                );
+
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(characterRepo
+                .findByCharacterIdAndWorldOwner(
+                        10L,
+                        testUser
+                ))
+                .thenReturn(Optional.of(testCharacter));
+
+        when(characterRepo.save(testCharacter))
+                .thenReturn(testCharacter);
+
+        WorldCharacter result =
+                characterService
+                        .updateCharacter(10L, dto);
+
+        assertEquals(
+                "Lucian Varek",
+                result.getCharacterName()
         );
 
-        when(characterRepo.findById(99L))
+        assertEquals(
+                "Half-Devil",
+                result.getCharacterSpecies()
+        );
+
+        assertEquals(
+                34,
+                result.getAge()
+        );
+
+        assertEquals(
+                "Test character",
+                result.getCharacterDescription()
+        );
+
+        assertEquals(
+                "Alta-Rivan",
+                result.getCharacterNationality()
+        );
+    }
+
+    @Test
+    void updateCharacter_shouldThrow_whenCharacterNotOwnedByCurrentUser() {
+
+        UpdateCharacterDto dto =
+                new UpdateCharacterDto(
+                        "Updated",
+                        null,
+                        null,
+                        null,
+                        null
+                );
+
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(characterRepo
+                .findByCharacterIdAndWorldOwner(
+                        99L,
+                        testUser
+                ))
                 .thenReturn(Optional.empty());
 
         assertThrows(
                 CharacterNotFound.class,
-                () -> characterService.updateCharacter(99L, dto)
+                () -> characterService
+                        .updateCharacter(99L, dto)
         );
 
-        verify(characterRepo, never()).save(any());
+        verify(characterRepo, never())
+                .save(any());
     }
 
 
@@ -300,28 +558,102 @@ class CharacterServiceTest {
     // =========================================================
 
     @Test
-    void deleteCharacter_shouldDeleteCharacter_whenCharacterExists() {
+    void deleteCharacter_shouldDelete_whenCharacterOwnedByCurrentUser() {
 
-        when(characterRepo.findById(10L))
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(characterRepo
+                .findByCharacterIdAndWorldOwner(
+                        10L,
+                        testUser
+                ))
                 .thenReturn(Optional.of(testCharacter));
 
         characterService.deleteCharacter(10L);
 
-        verify(characterRepo).findById(10L);
-        verify(characterRepo).deleteById(10L);
+        verify(characterRepo)
+                .findByCharacterIdAndWorldOwner(
+                        10L,
+                        testUser
+                );
+
+        verify(characterRepo)
+                .delete(testCharacter);
     }
 
     @Test
-    void deleteCharacter_shouldThrowCharacterNotFound_whenCharacterDoesNotExist() {
+    void deleteCharacter_shouldThrow_whenCharacterNotOwnedByCurrentUser() {
 
-        when(characterRepo.findById(99L))
+        when(userService.getCurrentUser())
+                .thenReturn(testUser);
+
+        when(characterRepo
+                .findByCharacterIdAndWorldOwner(
+                        99L,
+                        testUser
+                ))
                 .thenReturn(Optional.empty());
 
         assertThrows(
                 CharacterNotFound.class,
-                () -> characterService.deleteCharacter(99L)
+                () -> characterService
+                        .deleteCharacter(99L)
         );
 
-        verify(characterRepo, never()).deleteById(anyLong());
+        verify(characterRepo, never())
+                .delete(any(WorldCharacter.class));
+    }
+
+
+    // =========================================================
+    // TRANSFORM DTO
+    // =========================================================
+
+    @Test
+    void transformFromDto_shouldCreateCharacterWithCorrectWorld() {
+
+        CreateCharacterDto dto =
+                new CreateCharacterDto(
+                        "Lucian Varek",
+                        "Human",
+                        34,
+                        "Test character",
+                        "Eisenmarkian"
+                );
+
+        WorldCharacter result =
+                characterService
+                        .transformFromDto(dto, testWorld);
+
+        assertEquals(
+                "Lucian Varek",
+                result.getCharacterName()
+        );
+
+        assertEquals(
+                "Human",
+                result.getCharacterSpecies()
+        );
+
+        assertEquals(
+                34,
+                result.getAge()
+        );
+
+        assertEquals(
+                "Test character",
+                result.getCharacterDescription()
+        );
+
+        assertEquals(
+                "Eisenmarkian",
+                result.getCharacterNationality()
+        );
+
+        assertSame(
+                testWorld,
+                result.getWorld()
+        );
     }
 }

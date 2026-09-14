@@ -5,6 +5,7 @@ import com.cal.archivum.dto.LocationDto;
 import com.cal.archivum.dto.impl.CreateLocationDto;
 import com.cal.archivum.dto.impl.UpdateLocationDto;
 import com.cal.archivum.entity.Location;
+import com.cal.archivum.entity.User;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.exception.LocationNotFound;
 import com.cal.archivum.exception.LocationNotFoundByWorld;
@@ -12,6 +13,7 @@ import com.cal.archivum.exception.WorldNotFound;
 import com.cal.archivum.repository.LocationRepository;
 import com.cal.archivum.repository.WorldRepository;
 import com.cal.archivum.service.ILocationService;
+import com.cal.archivum.service.IUserService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,37 +23,45 @@ public class LocationService implements ILocationService {
 
     private final LocationRepository locationRepository;
     private final WorldRepository worldRepository;
+    private final IUserService userService;
 
-    public LocationService(LocationRepository locationRepository, WorldRepository worldRepository) {
+    public LocationService(LocationRepository locationRepository, WorldRepository worldRepository, IUserService userService) {
         this.locationRepository = locationRepository;
         this.worldRepository = worldRepository;
+        this.userService = userService;
     }
 
     @Override
     public List<Location> getAllLocationsByWorld(Long worldId) {
-        World world = worldRepository.findById(worldId).orElseThrow(() -> new WorldNotFound(worldId));
+        User currentUser = userService.getCurrentUser();
+        World world = worldRepository.findByWorldIdAndOwner(worldId, currentUser).orElseThrow(() -> new WorldNotFound(worldId));
         return locationRepository.findAllByWorld(world);
     }
 
     @Override
     public Location getLocation(Long id) {
-        return locationRepository.findById(id).orElseThrow(() -> new LocationNotFound(id));
+        User currentUser = userService.getCurrentUser();
+        return locationRepository.findByIdAndWorldOwner(id , currentUser).orElseThrow(() -> new LocationNotFound(id));
     }
 
     @Override
     public Location getLocationByWorldId(Long worldId, Long locationId) {
-        return locationRepository.findByIdAndWorldWorldId(locationId , worldId).orElseThrow(()-> new LocationNotFoundByWorld(locationId, worldId));
+        User currentUser = userService.getCurrentUser();
+        return locationRepository.findByIdAndWorldWorldIdAndWorldOwner(locationId , worldId , currentUser).orElseThrow(()-> new LocationNotFoundByWorld(locationId, worldId));
     }
 
     @Override
     public Location createLocation(CreateLocationDto dto, Long worldId) {
-        Location newLocation = transformFromDto(dto , worldId);
+        User currentUser = userService.getCurrentUser();
+        World world = worldRepository.findByWorldIdAndOwner(worldId , currentUser).orElseThrow(() -> new WorldNotFound(worldId));
+        Location newLocation = transformFromDto(dto , world);
         return locationRepository.save(newLocation);
     }
 
     @Override
     public Location updateLocation(Long id, UpdateLocationDto dto) {
-        Location existingLocation= locationRepository.findById(id).orElseThrow(() -> new LocationNotFound(id));
+        User currentUser = userService.getCurrentUser();
+        Location existingLocation= locationRepository.findByIdAndWorldOwner(id, currentUser).orElseThrow(() -> new LocationNotFound(id));
 
         if(dto.locationName() != null) {
             existingLocation.setLocationName(dto.locationName());
@@ -62,22 +72,21 @@ public class LocationService implements ILocationService {
         if(dto.locationType() != null) {
            existingLocation.setLocationType(dto.locationType());
         }
-
         return locationRepository.save(existingLocation);
     }
 
 
     @Override
     public void deleteLocation(Long id) {
-        locationRepository.findById(id).orElseThrow(() -> new LocationNotFound(id));
-        locationRepository.deleteById(id);
+        User currentUser = userService.getCurrentUser();
+        Location existingLocation = locationRepository.findByIdAndWorldOwner(id, currentUser).orElseThrow(() -> new LocationNotFound(id));
+        locationRepository.delete(existingLocation);
     }
 
     @Override
-    public Location transformFromDto(LocationDto dto, Long worldId) {
+    public Location transformFromDto(LocationDto dto, World world) {
 
         Location location = new Location();
-        World world =worldRepository.findById(worldId).orElseThrow(() -> new WorldNotFound(worldId));
         location.setLocationName(dto.locationName());
         location.setLocationType(dto.locationType());
         location.setLocationDescription(dto.locationDesc());

@@ -1,6 +1,7 @@
 package com.cal.archivum.repository;
 
 import com.cal.archivum.entity.Location;
+import com.cal.archivum.entity.User;
 import com.cal.archivum.entity.World;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -13,5 +14,6 @@ import java.util.Optional;
 public interface LocationRepository extends JpaRepository<Location, Long> {
 
     List<Location> findAllByWorld(World world);
-    Optional<Location> findByIdAndWorldWorldId(Long locationId , Long worldId);
+    Optional<Location> findByIdAndWorldWorldIdAndWorldOwner(Long locationId , Long worldId , User currentUser);
+    Optional<Location> findByIdAndWorldOwner(Long locationId , User Owner);
 }

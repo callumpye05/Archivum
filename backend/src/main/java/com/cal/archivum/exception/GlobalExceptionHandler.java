@@ -42,7 +42,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler (UsernameAlreadyUsed.class)
     public ResponseEntity<String> handleUsernameAlreadyUsed(UsernameAlreadyUsed ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
+    @ExceptionHandler (EmailAlreadyUsed.class)
+    public ResponseEntity<String> handleEmailAlreadyUsed(EmailAlreadyUsed ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 
     @ExceptionHandler (UserNotFoundByEmailOrUsername.class)
