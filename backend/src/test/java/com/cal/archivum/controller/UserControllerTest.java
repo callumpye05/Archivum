@@ -1,7 +1,7 @@
 package com.cal.archivum.controller;
 
 import com.cal.archivum.dto.impl.UpdateUserDto;
-import com.cal.archivum.entity.User;
+import com.cal.archivum.dto.impl.UserResponseDto;
 import com.cal.archivum.security.ArchivumSecurityConfig;
 import com.cal.archivum.service.IUserService;
 
@@ -38,17 +38,17 @@ class UserControllerTest {
     @MockitoBean
     private IUserService userService;
 
-    private User testUser;
+    private UserResponseDto testUserResponse;
 
 
     @BeforeEach
     void setUp() {
 
-        testUser = new User();
-        testUser.setId(1L);
-        testUser.setUserName("test_user");
-        testUser.setEmail("test@archivum.local");
-        testUser.setUserHashedPassword("{noop}password");
+        testUserResponse =
+                new UserResponseDto(
+                        "test_user",
+                        "test@archivum.local"
+                );
     }
 
 
@@ -72,8 +72,7 @@ class UserControllerTest {
                         put("/users/me")
                                 .contentType("application/json")
                                 .content(
-                                        objectMapper
-                                                .writeValueAsString(dto)
+                                        objectMapper.writeValueAsString(dto)
                                 )
                 )
                 .andExpect(status().isUnauthorized());
@@ -111,13 +110,11 @@ class UserControllerTest {
                         "newPassword"
                 );
 
-        User updatedUser = new User();
-        updatedUser.setId(1L);
-        updatedUser.setUserName("updated_user");
-        updatedUser.setEmail("updated@archivum.local");
-        updatedUser.setUserHashedPassword(
-                "{noop}newPassword"
-        );
+        UserResponseDto updatedUser =
+                new UserResponseDto(
+                        "updated_user",
+                        "updated@archivum.local"
+                );
 
         when(
                 userService.updateUser(
@@ -130,24 +127,24 @@ class UserControllerTest {
                         put("/users/me")
                                 .contentType("application/json")
                                 .content(
-                                        objectMapper
-                                                .writeValueAsString(dto)
+                                        objectMapper.writeValueAsString(dto)
                                 )
                 )
                 .andExpect(status().isOk())
-                .andExpect(
-                        jsonPath("$.id")
-                                .value(1L)
-                )
+
                 .andExpect(
                         jsonPath("$.userName")
                                 .value("updated_user")
                 )
+
                 .andExpect(
                         jsonPath("$.email")
-                                .value(
-                                        "updated@archivum.local"
-                                )
+                                .value("updated@archivum.local")
+                )
+
+                .andExpect(
+                        jsonPath("$.userHashedPassword")
+                                .doesNotExist()
                 );
 
         verify(userService)

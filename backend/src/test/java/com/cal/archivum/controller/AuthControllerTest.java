@@ -1,7 +1,7 @@
 package com.cal.archivum.controller;
 
 import com.cal.archivum.dto.impl.CreateUserDto;
-import com.cal.archivum.entity.User;
+import com.cal.archivum.dto.impl.UserResponseDto;
 import com.cal.archivum.exception.EmailAlreadyUsed;
 import com.cal.archivum.exception.UsernameAlreadyUsed;
 import com.cal.archivum.security.ArchivumSecurityConfig;
@@ -37,22 +37,23 @@ class AuthControllerTest {
     @MockitoBean
     private IUserService userService;
 
-    private User testUser;
+    private UserResponseDto testUserResponse;
 
 
     @BeforeEach
     void setUp() {
 
-        testUser = new User();
-        testUser.setId(1L);
-        testUser.setUserName("test_user");
-        testUser.setEmail("test@archivum.local");
-        testUser.setUserHashedPassword("encodedPassword");
+        testUserResponse =
+                new UserResponseDto(
+                        "test_user",
+                        "test@archivum.local"
+                );
     }
 
 
     @Test
-    void register_shouldReturn200_whenRequestIsValid() throws Exception {
+    void register_shouldReturn200_whenRequestIsValid()
+            throws Exception {
 
         CreateUserDto dto =
                 new CreateUserDto(
@@ -66,7 +67,8 @@ class AuthControllerTest {
                         any(CreateUserDto.class)
                 )
         )
-                .thenReturn(testUser);
+                .thenReturn(testUserResponse);
+
 
         mockMvc.perform(
                         post("/auth/register")
@@ -76,18 +78,22 @@ class AuthControllerTest {
                                 )
                 )
                 .andExpect(status().isOk())
-                .andExpect(
-                        jsonPath("$.id")
-                                .value(1L)
-                )
+
                 .andExpect(
                         jsonPath("$.userName")
                                 .value("test_user")
                 )
+
                 .andExpect(
                         jsonPath("$.email")
                                 .value("test@archivum.local")
+                )
+
+                .andExpect(
+                        jsonPath("$.userHashedPassword")
+                                .doesNotExist()
                 );
+
 
         verify(userService)
                 .createUser(
@@ -97,7 +103,8 @@ class AuthControllerTest {
 
 
     @Test
-    void register_shouldAllowAnonymousUser() throws Exception {
+    void register_shouldAllowAnonymousUser()
+            throws Exception {
 
         CreateUserDto dto =
                 new CreateUserDto(
@@ -111,7 +118,8 @@ class AuthControllerTest {
                         any(CreateUserDto.class)
                 )
         )
-                .thenReturn(testUser);
+                .thenReturn(testUserResponse);
+
 
         mockMvc.perform(
                         post("/auth/register")
@@ -121,6 +129,7 @@ class AuthControllerTest {
                                 )
                 )
                 .andExpect(status().isOk());
+
 
         verify(userService)
                 .createUser(
@@ -151,6 +160,7 @@ class AuthControllerTest {
                         )
                 );
 
+
         mockMvc.perform(
                         post("/auth/register")
                                 .contentType("application/json")
@@ -159,6 +169,7 @@ class AuthControllerTest {
                                 )
                 )
                 .andExpect(status().isConflict());
+
 
         verify(userService)
                 .createUser(
@@ -189,6 +200,7 @@ class AuthControllerTest {
                         )
                 );
 
+
         mockMvc.perform(
                         post("/auth/register")
                                 .contentType("application/json")
@@ -197,6 +209,7 @@ class AuthControllerTest {
                                 )
                 )
                 .andExpect(status().isConflict());
+
 
         verify(userService)
                 .createUser(
