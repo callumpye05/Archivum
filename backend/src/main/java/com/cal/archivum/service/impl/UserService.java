@@ -2,6 +2,7 @@ package com.cal.archivum.service.impl;
 
 import com.cal.archivum.dto.impl.CreateUserDto;
 import com.cal.archivum.dto.impl.UpdateUserDto;
+import com.cal.archivum.dto.impl.UserResponseDto;
 import com.cal.archivum.entity.User;
 import com.cal.archivum.exception.EmailAlreadyUsed;
 import com.cal.archivum.exception.UserNotFoundByEmailOrUsername;
@@ -26,10 +27,17 @@ public class UserService implements IUserService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    private UserResponseDto toUserResponse(User user) {
+        return new UserResponseDto(user.getUserName(),user.getEmail());
+    }
+
+
+
 
     @Override
-    public User createUser(CreateUserDto createUser) {
-        return userRepo.save(fromCreateDto(createUser));
+    public UserResponseDto createUser(CreateUserDto createUser) {
+        return toUserResponse(userRepo.save(fromCreateDto(createUser)));
+
     }
 
 
@@ -37,14 +45,14 @@ public class UserService implements IUserService {
 
     @Override
 
-    public User updateUser(UpdateUserDto updateUser) {
+    public UserResponseDto updateUser(UpdateUserDto updateUser) {
 
         User user = getCurrentUser();
         updateFromDto(user , updateUser);
         if (updateUser.password() !=null) {
             updatePassword(user , updateUser.password());
         }
-        return userRepo.save(user);
+        return toUserResponse(userRepo.save(user));
 
     }
 
