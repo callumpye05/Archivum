@@ -32,7 +32,8 @@ a {
   color: inherit;
   text-decoration: none;
 }
-button {
+button,
+.button-link {
   cursor: pointer;
   background: #fff;
   border: 1px solid #d7dbd4;
@@ -40,7 +41,8 @@ button {
   padding: 10px 16px;
   color: #30473c;
 }
-button:hover {
+button:hover,
+.button-link:hover {
   background: #ecefe8;
 }
 button:disabled {
@@ -55,6 +57,7 @@ button:disabled {
   display: flex;
   min-height: 100vh;
 }
+
 .sidebar {
   width: 236px;
   flex-shrink: 0;
@@ -105,6 +108,21 @@ button:disabled {
 .nav-link span:last-child {
   margin-left: auto;
 }
+.workspace-nav {
+  display: grid;
+  gap: 8px;
+}
+.workspace-nav .nav-link:not([aria-current]) {
+  background: transparent;
+}
+.workspace-nav .nav-link:hover {
+  background: #385248;
+}
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+}
 .sidebar-note {
   margin-top: auto;
   color: #b1c0b3;
@@ -135,10 +153,6 @@ button:disabled {
 .slash {
   padding: 0 15px;
   color: #b7bdb1;
-}
-.archive-label {
-  font-size: 10px;
-  letter-spacing: 2px;
 }
 main {
   max-width: 1360px;
@@ -522,6 +536,12 @@ label small,
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .workspace-nav {
+    display: flex;
+    flex-wrap: wrap;
   }
   .brand {
     font-size: 25px;
@@ -537,9 +557,6 @@ label small,
   .topbar {
     height: 58px;
     padding: 0 22px;
-  }
-  .archive-label {
-    display: none;
   }
   main {
     padding: 30px 22px;

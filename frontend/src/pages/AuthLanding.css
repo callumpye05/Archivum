@@ -1,0 +1,137 @@
+.auth-landing {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: #203e35;
+}
+.auth-brand,
+.auth-main,
+.auth-footer {
+  position: relative;
+}
+.auth-brand {
+  padding: 32px 48px;
+  color: #e9ede3;
+}
+.auth-brand .brand {
+  width: max-content;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+.auth-main {
+  flex: 1;
+  width: 100%;
+  max-width: 960px;
+  padding: 12px 32px 32px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 28px;
+}
+.auth-intro {
+  text-align: center;
+  color: #f8f7f2;
+}
+.auth-intro .eyebrow {
+  color: #d2b579;
+}
+.auth-intro h1 {
+  font-size: clamp(32px, 4vw, 48px);
+}
+.auth-intro > p:last-child {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #e0e7dc;
+}
+.auth-frame {
+  width: min(100%, 440px);
+  border: 1px solid #dce1d4;
+  border-radius: 7px;
+  background: #f8f7f2;
+  box-shadow: 0 24px 80px #102b2538;
+  overflow: hidden;
+}
+.auth-signout-note {
+  margin: 24px 32px 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #738074;
+}
+.auth-navigation {
+  margin: 0 32px;
+  gap: 28px;
+}
+.auth-navigation.tabs button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  padding: 20px 0 16px;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+}
+.auth-navigation.tabs button[aria-current] {
+  border-color: #36573e;
+}
+.auth-navigation.tabs button:hover {
+  color: #36573e;
+}
+.auth-panels {
+  display: grid;
+  overflow: hidden;
+}
+.auth-panel {
+  grid-area: 1 / 1;
+  min-width: 0;
+  transition:
+    transform 220ms ease,
+    opacity 220ms ease,
+    visibility 220ms;
+}
+.auth-panel .registration-card {
+  border: 0;
+  background: transparent;
+}
+.auth-register-panel {
+  transform: translateX(12px);
+  opacity: 0;
+  visibility: hidden;
+}
+.is-register .auth-register-panel {
+  transform: translateX(0);
+  opacity: 1;
+  visibility: visible;
+}
+.is-register .auth-login-panel {
+  transform: translateX(-12px);
+  opacity: 0;
+  visibility: hidden;
+}
+.auth-footer {
+  text-align: center;
+  padding: 12px 24px 28px;
+  color: #e0e7dc;
+  font:
+    italic 12px Georgia,
+    serif;
+}
+@media (max-width: 740px) {
+  .auth-brand {
+    padding: 22px;
+  }
+  .auth-main {
+    padding: 12px 22px 24px;
+    gap: 20px;
+  }
+}
+@media (max-width: 420px) {
+  .auth-navigation {
+    margin: 0 24px;
+  }
+}

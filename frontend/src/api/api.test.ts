@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as api from "./index";
-import { request } from "./client";
+import { clearAuthorization, onUnauthorized, request, signIn } from "./client";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  clearAuthorization();
+  vi.unstubAllGlobals();
+});
 describe("API contract", () => {
   it.each([
     ["world list", () => api.getWorlds(), "/worlds"],
@@ -118,13 +121,11 @@ describe("API contract", () => {
   it("shows JSON validation errors", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response('{"message":"Age must be non-negative"}', {
-            status: 400,
-          }),
-        ),
+      vi.fn().mockResolvedValue(
+        new Response('{"message":"Age must be non-negative"}', {
+          status: 400,
+        }),
+      ),
     );
     await expect(request("/characters/3", "PUT", { age: -1 })).rejects.toThrow(
       "Age must be non-negative",
@@ -142,5 +143,104 @@ describe("API contract", () => {
     vi.stubGlobal("fetch", fetch);
     await expect(api.deleteWorld(7)).rejects.toThrow("entries removed first");
     expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("account credential lifecycle", () => {
+  it.each([
+    [{ email: "new@example.com" }, "Archivist:password"],
+    [{ password: "new-password" }, "Archivist:new-password"],
+    [{ userName: "Renamed" }, "Renamed:password"],
+  ] as const)(
+    "applies partial account changes with the existing credential before rotating it",
+    async (dto, expected) => {
+      const fetch = vi.fn(async () => new Response("{}"));
+      vi.stubGlobal("fetch", fetch);
+      await signIn("Archivist", "password");
+      await api.updateUser(dto);
+      await api.getWorlds();
+      expect(fetch).toHaveBeenNthCalledWith(
+        2,
+        "/api/users/me",
+        expect.objectContaining({
+          method: "PUT",
+          body: JSON.stringify(dto),
+          credentials: "omit",
+          headers: expect.objectContaining({
+            Authorization: "Basic " + btoa("Archivist:password"),
+          }),
+        }),
+      );
+      expect(fetch).toHaveBeenNthCalledWith(
+        3,
+        "/api/worlds",
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: "Basic " + btoa(expected),
+          }),
+        }),
+      );
+    },
+  );
+  it("cannot restore credentials from an account response arriving after sign out", async () => {
+    let finish!: (response: Response) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response("[]"))
+        .mockImplementationOnce(
+          () =>
+            new Promise<Response>((resolve) => {
+              finish = resolve;
+            }),
+        )
+        .mockImplementation(async () => new Response("[]")),
+    );
+    await signIn("Archivist", "password");
+    const pending = api.updateUser({ userName: "Renamed" });
+    clearAuthorization();
+    finish(new Response("{}"));
+    await expect(pending).rejects.toThrow("Your sign-in changed");
+    await api.getWorlds();
+    expect(
+      new Headers(vi.mocked(fetch).mock.calls.at(-1)![1]?.headers).has(
+        "Authorization",
+      ),
+    ).toBe(false);
+  });
+  it("ignores a stale 401 from before an account update even when the credential text is unchanged", async () => {
+    let finish!: (response: Response) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response("[]"))
+        .mockImplementationOnce(
+          () =>
+            new Promise<Response>((resolve) => {
+              finish = resolve;
+            }),
+        )
+        .mockImplementation(async () => new Response("{}")),
+    );
+    const unauthorized = vi.fn();
+    const unsubscribe = onUnauthorized(unauthorized);
+    try {
+      await signIn("Archivist", "password");
+      const stale = api.getWorlds();
+      await api.updateUser({ email: "new@example.com" });
+      finish(new Response("Unauthorized", { status: 401 }));
+      await expect(stale).rejects.toThrow("Unauthorized");
+      expect(unauthorized).not.toHaveBeenCalled();
+      await api.getWorlds();
+      expect(
+        new Headers(vi.mocked(fetch).mock.calls.at(-1)![1]?.headers).get(
+          "Authorization",
+        ),
+      ).toBe("Basic " + btoa("Archivist:password"));
+    } finally {
+      unsubscribe();
+    }
   });
 });

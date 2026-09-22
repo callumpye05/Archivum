@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1100" viewBox="0 0 1800 1100">
+<title>The Quiet Peaks — an Archivum landscape</title>
+<desc>A slate mountain range with parchment-lit summits above a quiet, mist-filled valley. Fictional decorative artwork, not world records.</desc>
+<defs>
+  <linearGradient id="ground" x2=".8" y2="1"><stop stop-color="#aab1a0"/><stop offset="1" stop-color="#728582"/></linearGradient>
+  <linearGradient id="wash" x2="0" y2="1"><stop stop-color="#aab1a0" stop-opacity=".18"/><stop offset=".55" stop-color="#728582" stop-opacity="0"/><stop offset="1" stop-color="#2f4a48" stop-opacity=".3"/></linearGradient>
+  <radialGradient id="mist"><stop stop-color="#dedac1" stop-opacity=".18"/><stop offset="1" stop-color="#dedac1" stop-opacity="0"/></radialGradient>
+  <filter id="paper" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".055"/></feComponentTransfer><feBlend in="SourceGraphic" mode="soft-light"/></filter>
+</defs>
+<rect width="1800" height="1100" fill="url(#ground)"/>
+<path d="M0 490L190 315 320 390 555 210 720 375 940 280 1150 400 1440 190 1660 365 1800 310V1100H0Z" fill="#879991" /><path d="M0 700L230 455 370 515 610 315 795 550 1060 230 1190 385 1370 125 1600 430 1695 355 1800 510V1100H0Z" fill="#586f6c" /><path d="M610 315L570 520 795 550ZM1060 230L988 545 1190 385ZM1370 125L1300 515 1600 430Z" fill="#8e9d91" /><path d="M610 315L545 405 598 380 625 416 653 370ZM1060 230L989 330 1049 306 1070 347 1112 294ZM1370 125L1275 270 1344 229 1382 266 1423 207Z" fill="#c2c4ae" /><path d="M1370 286L1335 463 1430 592M1080 400L1130 497 1060 623M603 461L655 527 650 639" fill="none" stroke="#e0d4ae" stroke-opacity="0.29" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M0 840Q270 640 480 720T900 702T1350 675T1800 715V1100H0Z" fill="#82958b" /><path d="M0 955Q270 785 570 850T1130 812T1800 905V1100H0Z" fill="#657f75" /><path d="M950 951Q1210 790 1660 944M1090 960Q1350 869 1590 968" fill="none" stroke="#e0d4ae" stroke-opacity="0.2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M0 1000Q270 915 485 997T1000 1070T1490 1010T1800 1020V1100H0Z" fill="#3e6156" />
+<rect width="1800" height="1100" fill="url(#wash)"/>
+<ellipse cx="1000" cy="380" rx="1050" ry="350" fill="url(#mist)"/>
+<rect width="1800" height="1100" fill="transparent" filter="url(#paper)"/>
+</svg>

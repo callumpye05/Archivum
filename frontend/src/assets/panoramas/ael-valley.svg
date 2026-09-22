@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1100" viewBox="0 0 1800 1100">
+<title>The Ael Valley — an Archivum landscape</title>
+<desc>A silver-green river meanders through broad, open slopes toward a distant saddle of hills. Fictional decorative artwork, not world records.</desc>
+<defs>
+  <linearGradient id="ground" x2=".8" y2="1"><stop stop-color="#a4af91"/><stop offset="1" stop-color="#8f9e7d"/></linearGradient>
+  <linearGradient id="wash" x2="0" y2="1"><stop stop-color="#a4af91" stop-opacity=".18"/><stop offset=".55" stop-color="#8f9e7d" stop-opacity="0"/><stop offset="1" stop-color="#365b49" stop-opacity=".3"/></linearGradient>
+  <radialGradient id="mist"><stop stop-color="#dedac1" stop-opacity=".18"/><stop offset="1" stop-color="#dedac1" stop-opacity="0"/></radialGradient>
+  <filter id="paper" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".055"/></feComponentTransfer><feBlend in="SourceGraphic" mode="soft-light"/></filter>
+</defs>
+<rect width="1800" height="1100" fill="url(#ground)"/>
+<path d="M0 290Q300 138 510 294T1000 336Q1390 113 1800 292V1100H0Z" fill="#849a7d" /><path d="M0 465Q295 275 598 431L962 569Q1340 260 1800 429V1100H0Z" fill="#698969" /><path d="M0 748Q410 480 775 623T1270 620 1800 535V1100H0Z" fill="#9baa81" /><path d="M1090 370C930 480 1250 563 1030 652S877 786 1030 865 950 1005 783 1100H1090C1290 968 1270 871 1123 806S1190 710 1200 635 1030 484 1110 370Z" fill="#678e87" /><path d="M1090 370C930 480 1250 563 1030 652S877 786 1030 865 950 1005 783 1100" fill="none" stroke="#e0d4ae" stroke-opacity="0.5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M0 842Q250 616 580 737T832 1100H0Z" fill="#557a58" /><path d="M1800 620Q1510 508 1322 691T1395 1100H1800Z" fill="#567b5e" /><path d="M1360 818Q1520 651 1800 747M1400 850Q1555 711 1770 784M70 879Q297 708 529 808M111 916Q326 765 497 847" fill="none" stroke="#e0d4ae" stroke-opacity="0.25" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><g fill="#416951"><path transform="translate(1510 722) scale(0.65)" d="M0-100C-5-77-17-61-22-48L-14-50-34-18-22-22-43 8Q0-1 43 8L22-22 34-18 14-50 22-48C17-61 5-77 0-100Z"/><path transform="translate(1560 701) scale(0.8)" d="M0-100C-5-77-17-61-22-48L-14-50-34-18-22-22-43 8Q0-1 43 8L22-22 34-18 14-50 22-48C17-61 5-77 0-100Z"/><path transform="translate(1630 715) scale(0.95)" d="M0-100C-5-77-17-61-22-48L-14-50-34-18-22-22-43 8Q0-1 43 8L22-22 34-18 14-50 22-48C17-61 5-77 0-100Z"/><path transform="translate(1675 733) scale(0.6)" d="M0-100C-5-77-17-61-22-48L-14-50-34-18-22-22-43 8Q0-1 43 8L22-22 34-18 14-50 22-48C17-61 5-77 0-100Z"/></g>
+<rect width="1800" height="1100" fill="url(#wash)"/>
+<ellipse cx="1000" cy="380" rx="1050" ry="350" fill="url(#mist)"/>
+<rect width="1800" height="1100" fill="transparent" filter="url(#paper)"/>
+</svg>
