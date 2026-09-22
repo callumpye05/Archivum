@@ -1,3 +1,4 @@
+export { updateCurrentUser as updateUser } from "./client";
 import { request } from "./client";
 import type {
   World,
@@ -9,7 +10,11 @@ import type {
   UpdateCharacterDto,
   CreateLocationDto,
   UpdateLocationDto,
+  RegisterDto,
+  RegisteredUser,
 } from "../types";
+export const registerUser = (data: RegisterDto) =>
+  request<RegisteredUser>("/auth/register", "POST", data);
 export const getWorlds = () => request<World[]>("/worlds");
 export const getWorld = (id: number) => request<World>(`/worlds/${id}`);
 export const createWorld = (data: CreateWorldDto) =>
