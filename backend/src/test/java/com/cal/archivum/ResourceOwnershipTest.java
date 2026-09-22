@@ -1,5 +1,7 @@
 package com.cal.archivum;
 
+import com.cal.archivum.dto.impl.CreateWorldDto;
+import com.cal.archivum.dto.impl.UpdateWorldDto;
 import com.cal.archivum.entity.Location;
 import com.cal.archivum.entity.User;
 import com.cal.archivum.entity.World;
@@ -18,7 +20,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 import static com.cal.archivum.enums.LocationType.CITY;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -57,9 +59,13 @@ class ResourceOwnershipTest {
     private User userA;
     private User userB;
     private World worldA;
+    private UpdateWorldDto updateWorld;
 
     private Location locationA;
     private WorldCharacter characterA;
+    private CreateWorldDto createWorld;
+
+    private World worldC;
 
 
     @BeforeEach
@@ -82,6 +88,12 @@ class ResourceOwnershipTest {
         worldA.setWorldName("World A");
         worldA.setOwner(userA);
         worldRepository.save(worldA);
+
+        worldC = new World();
+        worldC.setWorldDesc("test world");
+        worldC.setWorldName("World C");
+        worldC.setOwner(userA);
+        worldRepository.save(worldC);
 
         locationA = new Location();
         locationA.setLocationName("test location");
@@ -107,6 +119,10 @@ class ResourceOwnershipTest {
 
         userB.setUserHashedPassword(passwordEncoder.encode("password"));
         userRepository.save(userB);
+        updateWorld = new UpdateWorldDto("NewName" , null);
+        createWorld = new CreateWorldDto("NewWorld", "NewDescription");
+
+
     }
 
 
@@ -156,6 +172,45 @@ class ResourceOwnershipTest {
     void authenticatedUser_gettingSomeoneElsesLocation_Should_Return404() throws Exception {
         mockMvc.perform(get("/locations/" + locationA.getId())).andExpect(status().isNotFound());
     }
+
+
+    @Test
+    @WithMockUser(username = "userA" , roles = "USER")
+    void authenticated_User_ModifyingTheirWorld_ShouldReturn200() throws Exception {
+        mockMvc.perform(put("/worlds/" + worldA.getWorldId()).contentType("application/json").content(objectMapper.writeValueAsString(updateWorld))).andExpect(status().isOk()).andExpect(jsonPath("$.worldId").value(worldA.getWorldId()))
+                .andExpect(jsonPath("$.worldName").value("NewName"));
+
+    }
+
+    @Test
+    @WithMockUser(username = "userB" , roles ="USER")
+    void authenticated_User_ModifyingSomeoneElsesWorld_ShouldReturn404() throws Exception {
+        mockMvc.perform(put("/worlds/" + worldA.getWorldId()).contentType("application/json").content(objectMapper.writeValueAsString(updateWorld))).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "userA" , roles = "USER")
+    void authenticated_User_CreatingWorld_ShouldReturn200() throws Exception {
+        mockMvc.perform(post("/worlds/create").contentType("application/json").content(objectMapper.writeValueAsString(createWorld))).andExpect(status().isOk()).andExpect(jsonPath("$.worldName").value("NewWorld"))
+                .andExpect(jsonPath("$.worldDesc").value("NewDescription"));
+    }
+
+    @Test
+    @WithMockUser(username = "userA" , roles = "USER")
+    void authenticated_User_DeletingTheirWorld_ShouldReturn200() throws Exception {
+        mockMvc.perform(delete("/worlds/" + worldC.getWorldId())).andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "userB" , roles = "USER")
+    void authenticated_User_DeletingSomeoneElsesWorld_ShouldReturn404() throws Exception {
+        mockMvc.perform(delete("/worlds/" + worldA.getWorldId())).andExpect(status().isNotFound());
+    }
+
+
+
+
+
 
 
 
