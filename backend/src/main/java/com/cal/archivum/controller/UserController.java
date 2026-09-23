@@ -2,6 +2,7 @@ package com.cal.archivum.controller;
 
 
 import com.cal.archivum.dto.impl.UpdateUserDto;
+import com.cal.archivum.dto.impl.UserResponseDto;
 import com.cal.archivum.entity.User;
 import com.cal.archivum.service.IUserService;
 import jakarta.validation.Valid;
@@ -18,7 +19,7 @@ public class UserController {
     }
 
     @PutMapping("/me")
-    public User updateUser(@Valid @RequestBody UpdateUserDto userDto) {
+    public UserResponseDto updateUser(@Valid @RequestBody UpdateUserDto userDto) {
         return userService.updateUser(userDto);
     }
 

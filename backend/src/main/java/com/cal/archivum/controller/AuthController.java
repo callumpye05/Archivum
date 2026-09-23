@@ -2,6 +2,7 @@ package com.cal.archivum.controller;
 
 
 import com.cal.archivum.dto.impl.CreateUserDto;
+import com.cal.archivum.dto.impl.UserResponseDto;
 import com.cal.archivum.entity.User;
 import com.cal.archivum.service.IUserService;
 import jakarta.validation.Valid;
@@ -21,7 +22,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public User register(@Valid @RequestBody CreateUserDto dto) {
+    public UserResponseDto register(@Valid @RequestBody CreateUserDto dto) {
         return userService.createUser(dto);
     }
 }

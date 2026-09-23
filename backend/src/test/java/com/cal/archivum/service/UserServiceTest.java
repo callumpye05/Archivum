@@ -2,6 +2,7 @@ package com.cal.archivum.service;
 
 import com.cal.archivum.dto.impl.CreateUserDto;
 import com.cal.archivum.dto.impl.UpdateUserDto;
+import com.cal.archivum.dto.impl.UserResponseDto;
 import com.cal.archivum.entity.User;
 import com.cal.archivum.exception.EmailAlreadyUsed;
 import com.cal.archivum.exception.UserNotFoundByEmailOrUsername;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -60,7 +62,6 @@ class UserServiceTest {
 
     @AfterEach
     void tearDown() {
-
         SecurityContextHolder.clearContext();
     }
 
@@ -79,62 +80,50 @@ class UserServiceTest {
                         "password123"
                 );
 
-        when(
-                userRepo.existsByEmail(
-                        "test@archivum.local"
-                )
-        )
+        when(userRepo.existsByEmail("test@archivum.local"))
                 .thenReturn(false);
 
-        when(
-                userRepo.existsByUserName(
-                        "test_user"
-                )
-        )
+        when(userRepo.existsByUserName("test_user"))
                 .thenReturn(false);
 
-        when(
-                passwordEncoder.encode(
-                        "password123"
-                )
-        )
+        when(passwordEncoder.encode("password123"))
                 .thenReturn("encodedPassword");
 
-        when(
-                userRepo.save(
-                        any(User.class)
-                )
-        )
-                .thenAnswer(
-                        invocation ->
-                                invocation.getArgument(0)
-                );
+        when(userRepo.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
 
-        User result =
+        UserResponseDto result =
                 userService.createUser(dto);
 
 
         assertEquals(
                 "test_user",
-                result.getUserName()
+                result.userName()
         );
 
         assertEquals(
                 "test@archivum.local",
-                result.getEmail()
+                result.email()
         );
+
+
+        ArgumentCaptor<User> userCaptor =
+                ArgumentCaptor.forClass(User.class);
+
+        verify(userRepo)
+                .save(userCaptor.capture());
+
+        User savedUser =
+                userCaptor.getValue();
 
         assertEquals(
                 "encodedPassword",
-                result.getUserHashedPassword()
+                savedUser.getUserHashedPassword()
         );
 
         verify(passwordEncoder)
                 .encode("password123");
-
-        verify(userRepo)
-                .save(any(User.class));
     }
 
 
@@ -148,11 +137,7 @@ class UserServiceTest {
                         "password123"
                 );
 
-        when(
-                userRepo.existsByEmail(
-                        "test@archivum.local"
-                )
-        )
+        when(userRepo.existsByEmail("test@archivum.local"))
                 .thenReturn(true);
 
 
@@ -162,15 +147,10 @@ class UserServiceTest {
         );
 
 
-        verify(
-                userRepo,
-                never()
-        )
+        verify(userRepo, never())
                 .save(any(User.class));
 
-        verifyNoInteractions(
-                passwordEncoder
-        );
+        verifyNoInteractions(passwordEncoder);
     }
 
 
@@ -184,18 +164,10 @@ class UserServiceTest {
                         "password123"
                 );
 
-        when(
-                userRepo.existsByEmail(
-                        "test@archivum.local"
-                )
-        )
+        when(userRepo.existsByEmail("test@archivum.local"))
                 .thenReturn(false);
 
-        when(
-                userRepo.existsByUserName(
-                        "test_user"
-                )
-        )
+        when(userRepo.existsByUserName("test_user"))
                 .thenReturn(true);
 
 
@@ -205,15 +177,10 @@ class UserServiceTest {
         );
 
 
-        verify(
-                userRepo,
-                never()
-        )
+        verify(userRepo, never())
                 .save(any(User.class));
 
-        verifyNoInteractions(
-                passwordEncoder
-        );
+        verifyNoInteractions(passwordEncoder);
     }
 
 
@@ -226,14 +193,8 @@ class UserServiceTest {
 
         authenticateAs("test_user");
 
-        when(
-                userRepo.findByUserName(
-                        "test_user"
-                )
-        )
-                .thenReturn(
-                        Optional.of(testUser)
-                );
+        when(userRepo.findByUserName("test_user"))
+                .thenReturn(Optional.of(testUser));
 
 
         User result =
@@ -251,9 +212,7 @@ class UserServiceTest {
         );
 
         verify(userRepo)
-                .findByUserName(
-                        "test_user"
-                );
+                .findByUserName("test_user");
     }
 
 
@@ -262,14 +221,8 @@ class UserServiceTest {
 
         authenticateAs("missing_user");
 
-        when(
-                userRepo.findByUserName(
-                        "missing_user"
-                )
-        )
-                .thenReturn(
-                        Optional.empty()
-                );
+        when(userRepo.findByUserName("missing_user"))
+                .thenReturn(Optional.empty());
 
 
         assertThrows(
@@ -278,9 +231,7 @@ class UserServiceTest {
         );
 
         verify(userRepo)
-                .findByUserName(
-                        "missing_user"
-                );
+                .findByUserName("missing_user");
     }
 
 
@@ -316,32 +267,28 @@ class UserServiceTest {
         )
                 .thenReturn(false);
 
-        when(
-                userRepo.save(testUser)
-        )
+        when(userRepo.save(testUser))
                 .thenReturn(testUser);
 
 
-        User result =
+        UserResponseDto result =
                 userService.updateUser(dto);
 
 
         assertEquals(
                 "updated_user",
-                result.getUserName()
+                result.userName()
         );
 
         assertEquals(
                 "updated@archivum.local",
-                result.getEmail()
+                result.email()
         );
 
         verify(userRepo)
                 .save(testUser);
 
-        verifyNoInteractions(
-                passwordEncoder
-        );
+        verifyNoInteractions(passwordEncoder);
     }
 
 
@@ -365,30 +312,25 @@ class UserServiceTest {
         )
                 .thenReturn(false);
 
-        when(
-                userRepo.save(testUser)
-        )
+        when(userRepo.save(testUser))
                 .thenReturn(testUser);
 
 
-        User result =
+        UserResponseDto result =
                 userService.updateUser(dto);
 
 
         assertEquals(
                 "test_user",
-                result.getUserName()
+                result.userName()
         );
 
         assertEquals(
                 "updated@archivum.local",
-                result.getEmail()
+                result.email()
         );
 
-        verify(
-                userRepo,
-                never()
-        )
+        verify(userRepo, never())
                 .existsByUserNameAndIdNot(
                         anyString(),
                         anyLong()
@@ -416,30 +358,25 @@ class UserServiceTest {
         )
                 .thenReturn(false);
 
-        when(
-                userRepo.save(testUser)
-        )
+        when(userRepo.save(testUser))
                 .thenReturn(testUser);
 
 
-        User result =
+        UserResponseDto result =
                 userService.updateUser(dto);
 
 
         assertEquals(
                 "updated_user",
-                result.getUserName()
+                result.userName()
         );
 
         assertEquals(
                 "test@archivum.local",
-                result.getEmail()
+                result.email()
         );
 
-        verify(
-                userRepo,
-                never()
-        )
+        verify(userRepo, never())
                 .existsByEmailAndIdNot(
                         anyString(),
                         anyLong()
@@ -459,28 +396,30 @@ class UserServiceTest {
                         "newPassword"
                 );
 
-        when(
-                passwordEncoder.encode(
-                        "newPassword"
-                )
-        )
-                .thenReturn(
-                        "newEncodedPassword"
-                );
+        when(passwordEncoder.encode("newPassword"))
+                .thenReturn("newEncodedPassword");
 
-        when(
-                userRepo.save(testUser)
-        )
+        when(userRepo.save(testUser))
                 .thenReturn(testUser);
 
 
-        User result =
+        UserResponseDto result =
                 userService.updateUser(dto);
 
 
         assertEquals(
+                "test_user",
+                result.userName()
+        );
+
+        assertEquals(
+                "test@archivum.local",
+                result.email()
+        );
+
+        assertEquals(
                 "newEncodedPassword",
-                result.getUserHashedPassword()
+                testUser.getUserHashedPassword()
         );
 
         verify(passwordEncoder)
@@ -503,18 +442,14 @@ class UserServiceTest {
                         null
                 );
 
-        when(
-                userRepo.save(testUser)
-        )
+        when(userRepo.save(testUser))
                 .thenReturn(testUser);
 
 
         userService.updateUser(dto);
 
 
-        verifyNoInteractions(
-                passwordEncoder
-        );
+        verifyNoInteractions(passwordEncoder);
     }
 
 
@@ -545,10 +480,7 @@ class UserServiceTest {
         );
 
 
-        verify(
-                userRepo,
-                never()
-        )
+        verify(userRepo, never())
                 .save(any(User.class));
     }
 
@@ -580,10 +512,7 @@ class UserServiceTest {
         );
 
 
-        verify(
-                userRepo,
-                never()
-        )
+        verify(userRepo, never())
                 .save(any(User.class));
     }
 
@@ -614,20 +543,12 @@ class UserServiceTest {
 
         authenticateAs("test_user");
 
-        when(
-                userRepo.findByUserName(
-                        "test_user"
-                )
-        )
-                .thenReturn(
-                        Optional.of(testUser)
-                );
+        when(userRepo.findByUserName("test_user"))
+                .thenReturn(Optional.of(testUser));
     }
 
 
-    private void authenticateAs(
-            String username
-    ) {
+    private void authenticateAs(String username) {
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
