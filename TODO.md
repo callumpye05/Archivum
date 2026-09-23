@@ -1,7 +1,7 @@
 # Archivum TODO
 
 ## Now
-- [ ] Finish resource ownership integration tests (currently done with world but need to do character and location)
+-  (DONE) Finish resource ownership integration tests (currently done with world but need to do character and location)
 
 ## Probably next
 -   Cascade World deletion to Characters and Locations
