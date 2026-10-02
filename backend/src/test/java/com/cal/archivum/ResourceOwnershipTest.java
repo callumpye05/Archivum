@@ -20,6 +20,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 import static com.cal.archivum.enums.LocationType.CITY;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -292,6 +293,18 @@ class ResourceOwnershipTest {
         mockMvc.perform(delete("/locations/"+locationA.getId())).andExpect(status().isNotFound());
     }
 
+
+
+
+    @Test
+    @WithMockUser(username ="userA" , roles = "USER")
+    void authenticated_User_DeletingTheirWorld_ShouldRemoveAllCharactersAndLocations() throws Exception {
+        mockMvc.perform(delete("/worlds/"+worldA.getWorldId())).andExpect(status().isOk());
+
+        assertFalse(worldRepository.existsById(worldA.getWorldId()));
+        assertFalse(characterRepository.existsById(characterA.getCharacterId()));
+        assertFalse(locationRepository.existsById(locationA.getId()));
+    }
 
 
 
