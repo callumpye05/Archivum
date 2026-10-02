@@ -1,0 +1,28 @@
+﻿.registration-card {
+  padding: 28px 32px 32px;
+}
+.registration-card h2 {
+  margin: 8px 0;
+  font-size: 28px;
+}
+.registration-card > p:not(.eyebrow) {
+  margin: 0;
+  font-size: 14px;
+  color: var(--archive-muted);
+  line-height: 1.7;
+}
+.registration-fields {
+  border: 0;
+  padding: 0;
+  margin: var(--space-lg) 0 0;
+  min-width: 0;
+}
+.registration-submit {
+  width: 100%;
+  margin-top: 20px;
+}
+@media (max-width: 420px) {
+  .registration-card {
+    padding: 24px;
+  }
+}

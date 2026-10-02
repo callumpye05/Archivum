@@ -1,0 +1,141 @@
+.auth-landing {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--archive-green-deep);
+}
+.auth-brand,
+.auth-main,
+.auth-footer {
+  position: relative;
+}
+.auth-brand {
+  padding: var(--space-xl) var(--page-gutter);
+  color: #e9ede3;
+}
+.auth-brand .brand {
+  width: max-content;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+.auth-main {
+  flex: 1;
+  width: 100%;
+  max-width: 960px;
+  padding: clamp(12px, 3vh, 40px) 32px 32px;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 28px;
+}
+.auth-intro {
+  text-align: center;
+  color: #f8f7f2;
+}
+.auth-intro .eyebrow {
+  color: #d2b579;
+}
+.auth-intro h1 {
+  font-size: clamp(32px, 4vw, 48px);
+}
+.auth-intro > p:last-child {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #e0e7dc;
+}
+.auth-frame {
+  width: min(100%, 440px);
+  border: 1px solid var(--archive-border);
+  border-radius: 7px;
+  background: var(--archive-ivory);
+  box-shadow: 0 24px 80px #102b2538;
+  overflow: hidden;
+}
+.auth-signout-note {
+  margin: 24px 32px 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--archive-muted);
+}
+.auth-navigation {
+  margin: 0 32px;
+  gap: 28px;
+}
+.auth-navigation.tabs button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  padding: 20px 0 16px;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+}
+.auth-navigation.tabs button[aria-current] {
+  border-color: #36573e;
+}
+.auth-navigation.tabs button:hover {
+  color: #36573e;
+}
+.auth-panels {
+  overflow: hidden;
+}
+.auth-panel {
+  min-width: 0;
+}
+.auth-panel[aria-hidden="true"] {
+  display: none;
+}
+.auth-panel[aria-hidden="false"] {
+  animation: auth-reveal 180ms ease-out;
+}
+.auth-panel:focus-visible {
+  outline-offset: -4px;
+}
+.auth-panel .registration-card {
+  border: 0;
+  background: transparent;
+}
+@keyframes auth-reveal {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.auth-footer {
+  text-align: center;
+  padding: 12px 24px 28px;
+  color: #e0e7dc;
+  font:
+    italic 12px Georgia,
+    serif;
+}
+@media (max-width: 740px) {
+  .auth-brand {
+    padding: 22px;
+  }
+  .auth-main {
+    padding: 12px 22px 24px;
+    gap: 20px;
+  }
+  .auth-intro .eyebrow {
+    max-width: 30ch;
+    margin-inline: auto;
+  }
+  .auth-intro h1 {
+    max-width: 15ch;
+    margin-inline: auto;
+  }
+}
+@media (max-width: 420px) {
+  .auth-navigation {
+    margin: 0 24px;
+  }
+}

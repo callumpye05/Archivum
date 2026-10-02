@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1100" viewBox="0 0 1800 1100">
+<title>The Orren Plain — an Archivum landscape</title>
+<desc>Low, wind-shaped ridges cross an open grassland, with one faint trail disappearing into the distance. Fictional decorative artwork, not world records.</desc>
+<defs>
+  <linearGradient id="ground" x2=".8" y2="1"><stop stop-color="#bbb697"/><stop offset="1" stop-color="#a2a07b"/></linearGradient>
+  <linearGradient id="wash" x2="0" y2="1"><stop stop-color="#bbb697" stop-opacity=".18"/><stop offset=".55" stop-color="#a2a07b" stop-opacity="0"/><stop offset="1" stop-color="#4c6852" stop-opacity=".3"/></linearGradient>
+  <radialGradient id="mist"><stop stop-color="#dedac1" stop-opacity=".18"/><stop offset="1" stop-color="#dedac1" stop-opacity="0"/></radialGradient>
+  <filter id="paper" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".055"/></feComponentTransfer><feBlend in="SourceGraphic" mode="soft-light"/></filter>
+</defs>
+<rect width="1800" height="1100" fill="url(#ground)"/>
+<path d="M0 345Q225 307 495 373T1030 352 1470 334 1800 362V1100H0Z" fill="#929d7d" /><path d="M0 536Q353 390 719 515T1310 495 1800 445V1100H0Z" fill="#a8aa80" /><path d="M0 697Q259 568 519 671T1035 636 1530 609 1800 655V1100H0Z" fill="#879974" /><path d="M0 934Q358 719 774 869T1340 828 1800 757V1100H0Z" fill="#708965" /><path d="M1370 440C1190 511 1360 573 1190 668S1090 802 1215 903 1100 1020 1040 1100" fill="none" stroke="#e0d4ae" stroke-opacity="0.42" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M1015 770Q1230 667 1530 729M1040 802Q1260 707 1500 758M110 651Q325 586 464 639" fill="none" stroke="#e0d4ae" stroke-opacity="0.2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M0 1070Q302 975 575 1035T1150 1060 1800 1015V1100H0Z" fill="#526f54" />
+<rect width="1800" height="1100" fill="url(#wash)"/>
+<ellipse cx="1000" cy="380" rx="1050" ry="350" fill="url(#mist)"/>
+<rect width="1800" height="1100" fill="transparent" filter="url(#paper)"/>
+</svg>

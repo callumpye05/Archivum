@@ -16,4 +16,6 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
     List<Location> findAllByWorld(World world);
     Optional<Location> findByIdAndWorldWorldIdAndWorldOwner(Long locationId , Long worldId , User currentUser);
     Optional<Location> findByIdAndWorldOwner(Long locationId , User Owner);
+    void deleteAllByWorld(World world);
+
 }

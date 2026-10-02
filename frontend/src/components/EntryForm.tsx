@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Modal } from "./Modal";
 import { locationTypes } from "../types";
 export type Field = {
@@ -60,9 +60,11 @@ export function EntryForm({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const submitting = useRef(false);
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (submitting.current) return;
+    submitting.current = true;
     setBusy(true);
     setError("");
     try {
@@ -72,19 +74,23 @@ export function EntryForm({
         error instanceof Error ? error.message : "Could not save this entry.",
       );
       setBusy(false);
+      submitting.current = false;
     }
   }
   return (
     <Modal title={title} onClose={onClose} busy={busy}>
       <p className="form-note">{context}</p>
-      <form onSubmit={submit}>
-        <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0 }}>
+      <form onSubmit={submit} aria-busy={busy}>
+        <fieldset disabled={busy} className="entry-fields">
           <div className="form-fields">
             {fields.map((field) => {
               const props = {
                 id: field.name,
                 name: field.name,
                 value: values[field.name],
+                "aria-describedby": field.maxLength
+                  ? `${field.name}-limit`
+                  : undefined,
                 onChange: (
                   event: React.ChangeEvent<
                     HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -116,7 +122,7 @@ export function EntryForm({
                     />
                   )}
                   {field.maxLength && (
-                    <small>
+                    <small id={`${field.name}-limit`}>
                       {values[field.name].length} / {field.maxLength}
                     </small>
                   )}

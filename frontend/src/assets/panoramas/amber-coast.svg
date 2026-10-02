@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1100" viewBox="0 0 1800 1100">
+<title>The Amber Coast — an Archivum landscape</title>
+<desc>A long, sandy shoreline curves around a quiet bay beneath broad ochre and sage headlands. Fictional decorative artwork, not world records.</desc>
+<defs>
+  <linearGradient id="ground" x2=".8" y2="1"><stop stop-color="#7d9a8c"/><stop offset="1" stop-color="#4d7c7d"/></linearGradient>
+  <linearGradient id="wash" x2="0" y2="1"><stop stop-color="#7d9a8c" stop-opacity=".18"/><stop offset=".55" stop-color="#4d7c7d" stop-opacity="0"/><stop offset="1" stop-color="#294f51" stop-opacity=".3"/></linearGradient>
+  <radialGradient id="mist"><stop stop-color="#dedac1" stop-opacity=".18"/><stop offset="1" stop-color="#dedac1" stop-opacity="0"/></radialGradient>
+  <filter id="paper" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".055"/></feComponentTransfer><feBlend in="SourceGraphic" mode="soft-light"/></filter>
+</defs>
+<rect width="1800" height="1100" fill="url(#ground)"/>
+<path d="M0 0H1800V272C1580 235 1535 360 1340 410S1100 421 1060 555 1250 741 1120 837 788 800 679 940 527 1040 510 1100H0Z" fill="none" stroke="#c2c6a5" stroke-opacity=".16" stroke-width="64"/><path d="M0 0H1800V272C1580 235 1535 360 1340 410S1100 421 1060 555 1250 741 1120 837 788 800 679 940 527 1040 510 1100H0Z" fill="#b4ac83" stroke="#ded0a3" stroke-width="8"/><path d="M0 0H1800V177Q1550 154 1390 286T1110 354Q920 410 952 562T967 714Q694 731 560 908T325 1100H0Z" fill="#899978" /><path d="M0 0H1800V95Q1510 82 1290 235T860 300 494 481 0 500Z" fill="#758d70" /><path d="M1280 317Q1140 332 1050 425M1300 340Q1167 363 1097 437M596 835Q712 726 870 757M608 867Q725 760 849 788" fill="none" stroke="#e0d4ae" stroke-opacity="0.4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M1290 606Q1440 501 1690 543M1295 636Q1470 544 1640 579M818 1000Q995 904 1220 957" fill="none" stroke="#e0d4ae" stroke-opacity="0.19" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M0 815Q236 730 430 850L322 1100H0Z" fill="#607d62" />
+<rect width="1800" height="1100" fill="url(#wash)"/>
+<ellipse cx="1000" cy="380" rx="1050" ry="350" fill="url(#mist)"/>
+<rect width="1800" height="1100" fill="transparent" filter="url(#paper)"/>
+</svg>

@@ -1,0 +1,70 @@
+.panorama,
+.panorama-scene,
+.panorama-shade {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.panorama {
+  background: #203e35;
+  isolation: isolate;
+}
+.panorama-scene {
+  /* Overscan covers the edges during the small horizontal drift. */
+  inset: -2%;
+  opacity: 0;
+  transform: translateX(0.6%);
+  z-index: 0;
+  transition:
+    opacity 2800ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 2800ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.panorama-scene.is-active {
+  opacity: 1;
+  transform: translateX(0);
+  z-index: 2;
+}
+.panorama-scene.is-outgoing {
+  opacity: 0;
+  transform: translateX(-0.6%);
+  z-index: 1;
+}
+.panorama-scene img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1);
+  transition: transform 14800ms ease-in-out;
+}
+.panorama-scene.is-active img,
+.panorama-scene.is-outgoing img {
+  transform: scale(1.012);
+}
+.panorama-shade {
+  z-index: 3;
+  /* A steady veil protects the form and heading across all six palettes. */
+  background:
+    linear-gradient(90deg, #102b255c, #102b2526 52%, transparent 80%),
+    linear-gradient(180deg, #102b2594, #102b2538 48%, #102b2585);
+}
+@media (max-width: 740px) {
+  .panorama-scene img {
+    /* Keep the forest edge, peaks, and river bend in the portrait crop. */
+    object-position: 62% center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panorama-scene,
+  .panorama-scene img {
+    transition: none;
+    transform: none;
+  }
+  .panorama-scene.is-active,
+  .panorama-scene.is-outgoing,
+  .panorama-scene.is-active img,
+  .panorama-scene.is-outgoing img {
+    transform: none;
+  }
+}

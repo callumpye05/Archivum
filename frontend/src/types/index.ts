@@ -1,3 +1,18 @@
+// PUT /users/me: omitted fields are left unchanged by UserService.
+export interface UpdateUserDto {
+  userName?: string;
+  email?: string;
+  password?: string;
+}
+export interface RegisterDto {
+  userName: string;
+  email: string;
+  password: string;
+}
+export interface RegisteredUser {
+  userName: string;
+  email: string;
+}
 export interface World {
   worldId: number;
   worldName: string;

@@ -2,7 +2,8 @@ import { useCallback, useState } from "react";
 import * as api from "../api";
 import type { WorldCharacter, Location, LocationType } from "../types";
 import { useResource } from "../hooks/useResource";
-import { Empty, ErrorState, Loading, dateLabel } from "../components/States";
+import { Empty, ErrorState, Loading } from "../components/States";
+import { FeedbackMessage } from "../components/FeedbackMessage";
 import {
   EntryForm,
   worldFields,
@@ -96,7 +97,11 @@ export function WorldDetailPage({ id }: { id: number }) {
       locations.reload();
     }
     setEditing(null);
-    setNotice("Entry saved.");
+    setNotice(
+      editing.kind === "world"
+        ? "World updated."
+        : `${editing.kind === "characters" ? "Character" : "Location"} ${editing.entry ? "updated" : "created"}.`,
+    );
   }
   async function remove() {
     if (!deleting) return;
@@ -111,14 +116,17 @@ export function WorldDetailPage({ id }: { id: number }) {
       locations.reload();
     }
     setDeleting(null);
-    setNotice("Entry deleted.");
+    if (deleting.kind !== "world")
+      setNotice(
+        `${deleting.kind === "characters" ? "Character" : "Location"} deleted.`,
+      );
   }
   return (
     <>
       <a className="back" href="#/">
         ← All worlds
       </a>
-      <header className="page-heading">
+      <header className="page-heading world-heading">
         <div>
           <p className="eyebrow">
             WORLD ARCHIVE / {String(id).padStart(2, "0")}
@@ -129,10 +137,11 @@ export function WorldDetailPage({ id }: { id: number }) {
           </p>
         </div>
         <div className="actions">
-          <button onClick={() => setEditing({ kind: "world" })}>
+          <button type="button" onClick={() => setEditing({ kind: "world" })}>
             Edit world
           </button>
           <button
+            type="button"
             className="danger"
             onClick={() =>
               setDeleting({ kind: "world", id, name: selectedWorld.worldName })
@@ -142,20 +151,18 @@ export function WorldDetailPage({ id }: { id: number }) {
           </button>
         </div>
       </header>
-      {notice && (
-        <div className="notice" role="status">
-          {notice}
-        </div>
-      )}
-      <nav className="tabs" aria-label ="World sections">
+      <FeedbackMessage message={notice} onDismiss={setNotice} />
+      <nav className="tabs" aria-label="World sections">
         <button
+          type="button"
           aria-current={tab === "characters" ? "page" : undefined}
           onClick={() => setTab("characters")}
         >
           Characters <span>{characters.data?.length ?? "—"}</span>
         </button>
         <button
-          aria-current={tab ==="locations" ? "page" : undefined}
+          type="button"
+          aria-current={tab === "locations" ? "page" : undefined}
           onClick={() => setTab("locations")}
         >
           Locations <span>{locations.data?.length ?? "—"}</span>
@@ -164,7 +171,7 @@ export function WorldDetailPage({ id }: { id: number }) {
       <div className="toolbar">
         <div>
           <h2>
-            {tab ==="characters"
+            {tab === "characters"
               ? "People of this world"
               : "Places of this world"}
           </h2>
@@ -172,8 +179,12 @@ export function WorldDetailPage({ id }: { id: number }) {
             In {selectedWorld.worldName || "this untitled world"}
           </p>
         </div>
-        <button className="primary" onClick={() => setEditing({ kind: tab })}>
-          ＋ {tab ==="characters" ? "Create character" : "Create location"}
+        <button
+          type="button"
+          className="primary"
+          onClick={() => setEditing({ kind: tab })}
+        >
+          ＋ {tab === "characters" ? "Create character" : "Create location"}
         </button>
       </div>
       {resource.loading ? (
@@ -181,8 +192,15 @@ export function WorldDetailPage({ id }: { id: number }) {
       ) : resource.error ? (
         <ErrorState message={resource.error} retry={resource.reload} />
       ) : !resource.data?.length ? (
-        <Empty title={`No ${tab} yet`}>
-          Add the first {tab ==="characters" ? "character" : "location"} to{" "}
+        <Empty
+          title={`No ${tab} yet`}
+          action={
+            <button type="button" onClick={() => setEditing({ kind: tab })}>
+              Create {tab === "characters" ? "character" : "location"}
+            </button>
+          }
+        >
+          Add the first {tab === "characters" ? "character" : "location"} to{" "}
           {selectedWorld.worldName || "this world"}.
         </Empty>
       ) : (
@@ -194,11 +212,15 @@ export function WorldDetailPage({ id }: { id: number }) {
                     {c.characterSpecies || "Species unrecorded"}
                   </p>
                   <h2>{c.characterName || "Unnamed character"}</h2>
-                  <p className="excerpt">
+                  <p
+                    className={`excerpt${c.characterDescription ? "" : " placeholder"}`}
+                  >
                     {c.characterDescription || "No description yet."}
                   </p>
                   <div className="actions">
                     <button
+                      type="button"
+                      aria-label={`View ${c.characterName || "character"}`}
                       onClick={() =>
                         setViewing({ kind: "characters", id: c.characterId })
                       }
@@ -206,6 +228,9 @@ export function WorldDetailPage({ id }: { id: number }) {
                       View
                     </button>
                     <button
+                      type="button"
+                      className="ghost"
+                      aria-label={`Edit ${c.characterName || "character"}`}
                       onClick={() =>
                         setEditing({ kind: "characters", entry: c })
                       }
@@ -213,7 +238,9 @@ export function WorldDetailPage({ id }: { id: number }) {
                       Edit
                     </button>
                     <button
+                      type="button"
                       className="danger"
+                      aria-label={`Delete ${c.characterName || "character"}`}
                       onClick={() =>
                         setDeleting({
                           kind: "characters",
@@ -231,11 +258,15 @@ export function WorldDetailPage({ id }: { id: number }) {
                 <article className="entry-card" key={l.id}>
                   <p className="eyebrow">{l.locationType}</p>
                   <h2>{l.locationName || "Unnamed location"}</h2>
-                  <p className="excerpt">
+                  <p
+                    className={`excerpt${l.locationDescription ? "" : " placeholder"}`}
+                  >
                     {l.locationDescription || "No description yet."}
                   </p>
                   <div className="actions">
                     <button
+                      type="button"
+                      aria-label={`View ${l.locationName || "location"}`}
                       onClick={() =>
                         setViewing({ kind: "locations", id: l.id })
                       }
@@ -243,6 +274,9 @@ export function WorldDetailPage({ id }: { id: number }) {
                       View
                     </button>
                     <button
+                      type="button"
+                      className="ghost"
+                      aria-label={`Edit ${l.locationName || "location"}`}
                       onClick={() =>
                         setEditing({ kind: "locations", entry: l })
                       }
@@ -250,7 +284,9 @@ export function WorldDetailPage({ id }: { id: number }) {
                       Edit
                     </button>
                     <button
+                      type="button"
                       className="danger"
+                      aria-label={`Delete ${l.locationName || "location"}`}
                       onClick={() =>
                         setDeleting({
                           kind: "locations",
@@ -273,9 +309,19 @@ export function WorldDetailPage({ id }: { id: number }) {
               ? "Edit world"
               : `${editing.entry ? "Edit" : "Create"} ${editing.kind === "characters" ? "character" : "location"}`
           }
-          context={ editing.kind ==="world" ? "World names must be unique." : `Belongs to ${selectedWorld.worldName || "this world"}.`}
+          context={
+            editing.kind === "world"
+              ? "World names must be unique."
+              : `Belongs to ${selectedWorld.worldName || "this world"}.`
+          }
 
-          fields={ editing.kind ==="world" ? worldFields : editing.kind ==="characters" ? characterFields  : locationFields }
+          fields={
+            editing.kind === "world"
+              ? worldFields
+              : editing.kind === "characters"
+                ? characterFields
+                : locationFields
+          }
           initial={initial}
           onSave={save}
           onClose={() => setEditing(null)}
@@ -284,16 +330,22 @@ export function WorldDetailPage({ id }: { id: number }) {
       {deleting && (
         <DeleteDialog
           name={deleting.name}
-          isWorld={deleting.kind ==="world"}
+          kind={
+            deleting.kind === "world"
+              ? "world"
+              : deleting.kind === "characters"
+                ? "character"
+                : "location"
+          }
           onDelete={remove}
-          onClose={() =>setDeleting(null)}
+          onClose={() => setDeleting(null)}
         />
       )}
       {viewing && (
         <EntryDetail
           worldId={id}
           {...viewing}
-          onClose={()=> setViewing(null)}
+          onClose={() => setViewing(null)}
         />
       )}
     </>

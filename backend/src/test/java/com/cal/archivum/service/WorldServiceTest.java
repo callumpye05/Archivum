@@ -2,9 +2,14 @@ package com.cal.archivum.service;
 
 import com.cal.archivum.dto.impl.CreateWorldDto;
 import com.cal.archivum.dto.impl.UpdateWorldDto;
+import com.cal.archivum.entity.Location;
 import com.cal.archivum.entity.User;
 import com.cal.archivum.entity.World;
+import com.cal.archivum.entity.WorldCharacter;
+import com.cal.archivum.enums.LocationType;
 import com.cal.archivum.exception.WorldNotFound;
+import com.cal.archivum.repository.CharacterRepository;
+import com.cal.archivum.repository.LocationRepository;
 import com.cal.archivum.repository.WorldRepository;
 import com.cal.archivum.service.impl.WorldService;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,10 +33,20 @@ class WorldServiceTest {
     @Mock
     private IUserService userService;
 
+    @Mock
+    private CharacterRepository characterRepo;
+
+    @Mock
+    private LocationRepository locationRepo;
+
     private WorldService worldService;
 
     private User testUser;
     private World testWorld;
+
+    private Location testLocation;
+    private WorldCharacter testCharacter;
+
 
     @BeforeEach
     void setUp() {
@@ -39,7 +54,7 @@ class WorldServiceTest {
         worldService =
                 new WorldService(
                         worldRepo,
-                        userService
+                        userService, characterRepo , locationRepo
                 );
 
         testUser = new User();
@@ -52,6 +67,21 @@ class WorldServiceTest {
                 "A vast fortified bastion that survived the collapse."
         );
         testWorld.setOwner(testUser);
+
+        testCharacter = new WorldCharacter();
+        testCharacter.setCharacterId(10L);
+        testCharacter.setCharacterName("John Doe");
+        testCharacter.setCharacterSpecies("Human");
+        testCharacter.setAge(34);
+        testCharacter.setCharacterNationality("Eisenmarkian");
+        testCharacter.setCharacterDescription("Test character");
+        testCharacter.setWorld(testWorld);
+
+        testLocation = new Location();
+        testLocation.setId(10L);
+        testLocation.setLocationName("Ironspire");
+        testLocation.setLocationType(LocationType.CITY);
+        testLocation.setLocationDescription("A large industrial city.");
     }
 
 

@@ -5,6 +5,7 @@
 
 ## Probably next
 -   Cascade World deletion to Characters and Locations
+-   Adapt front end in accordance 
 -   Test cascade deletion boundaries
 -   Email verification
 
