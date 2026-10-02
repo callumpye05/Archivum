@@ -37,6 +37,16 @@ export default function App() {
   }
   return (
     <div className="app">
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById("main-content")?.focus();
+        }}
+      >
+        Skip to content
+      </a>
       <aside className="sidebar">
         <a href="#/" className="brand">
           <span className="brand-icon">A</span>Archivum
@@ -49,7 +59,7 @@ export default function App() {
           </a>
         </nav>
         <div className="sidebar-note">
-          <span>✧</span>
+          <span aria-hidden="true">✧</span>
           <p>
             Every world has no limits.
             <br />
@@ -59,7 +69,7 @@ export default function App() {
       </aside>
       <div className="workspace">
         <div className="topbar">
-          <span>
+          <span className="breadcrumb">
             Personal archive <span className="slash">/</span> {pageTitle}
           </span>
           <AccountMenu
@@ -72,7 +82,7 @@ export default function App() {
             }}
           />
         </div>
-        <main>
+        <main id="main-content" tabIndex={-1}>
           {match ? (
             <WorldDetailPage key={match[1]} id={Number(match[1])} />
           ) : (

@@ -24,9 +24,11 @@ export function Loading() {
 export function Empty({
   title,
   children,
+  action,
 }: {
   title: string;
   children: React.ReactNode;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="state empty">
@@ -35,6 +37,7 @@ export function Empty({
       </span>
       <h3>{title}</h3>
       <p>{children}</p>
+      {action}
     </div>
   );
 }

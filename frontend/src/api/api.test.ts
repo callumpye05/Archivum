@@ -7,6 +7,44 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("API contract", () => {
+  it.each([200, 201, 202, 204, 205, 206, 299])(
+    "accepts an empty %i world DELETE with Basic auth and no child requests",
+    async (status) => {
+      const fetch = vi.fn().mockResolvedValueOnce(new Response("[]"));
+      vi.stubGlobal("fetch", fetch);
+      await signIn("Archivist", "test-password");
+      fetch.mockClear();
+      const response = new Response(null, { status });
+      const parseJson = vi.spyOn(response, "json");
+      fetch.mockResolvedValueOnce(response);
+      await expect(api.deleteWorld(7)).resolves.toBeUndefined();
+      expect(parseJson).not.toHaveBeenCalled();
+      expect(fetch).toHaveBeenCalledExactlyOnceWith(
+        "/api/worlds/7",
+        expect.objectContaining({
+          method: "DELETE",
+          body: undefined,
+          credentials: "omit",
+          headers: expect.objectContaining({
+            Authorization: `Basic ${btoa("Archivist:test-password")}`,
+          }),
+        }),
+      );
+    },
+  );
+  it.each([400, 401, 403, 404, 409, 500, 503])(
+    "rejects a world DELETE with HTTP %i without issuing child requests",
+    async (status) => {
+      const fetch = vi.fn().mockResolvedValue(new Response(null, { status }));
+      vi.stubGlobal("fetch", fetch);
+      await expect(api.deleteWorld(7)).rejects.toMatchObject({
+        name: "ApiError",
+        status,
+      });
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(fetch.mock.calls[0][0]).toBe("/api/worlds/7");
+    },
+  );
   it.each([
     ["world list", () => api.getWorlds(), "/worlds"],
     ["world", () => api.getWorld(7), "/worlds/7"],
@@ -138,10 +176,12 @@ describe("API contract", () => {
     );
     await expect(api.getWorlds()).rejects.toThrow("Could not reach Archivum");
   });
-  it("explains possible world deletion constraints without deleting children", async () => {
+  it("reports a world deletion failure without deleting children", async () => {
     const fetch = vi.fn().mockResolvedValue(new Response("", { status: 500 }));
     vi.stubGlobal("fetch", fetch);
-    await expect(api.deleteWorld(7)).rejects.toThrow("entries removed first");
+    await expect(api.deleteWorld(7)).rejects.toThrow(
+      "Unable to delete this entry",
+    );
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 });

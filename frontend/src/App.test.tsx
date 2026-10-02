@@ -40,6 +40,7 @@ let failure = false;
 let empty = false;
 let authenticated = true;
 let acceptLogin = false;
+let deleteStatus = 204;
 
 beforeEach(() => {
   clearAuthorization();
@@ -61,6 +62,7 @@ beforeEach(() => {
   empty = false;
   authenticated = true;
   acceptLogin = false;
+  deleteStatus = 204;
   calls.length = 0;
   vi.stubGlobal(
     "fetch",
@@ -83,7 +85,8 @@ beforeEach(() => {
         authenticated = true;
       if (!authenticated) return new Response("Unauthorized", { status: 401 });
       if (failure) return new Response("Save rejected", { status: 400 });
-      if (method === "DELETE") return new Response(null, { status: 204 });
+      if (method === "DELETE")
+        return new Response(null, { status: deleteStatus });
       let value: unknown = world;
       if (path === "/api/worlds") value = empty ? [] : [world];
       else if (path.endsWith("/characters"))
@@ -513,18 +516,274 @@ it("retains form data after failure and permits a retry", async () => {
   });
 });
 
-it("requires explicit confirmation and allows cancellation of world deletion", async () => {
+it.each([
+  ["/", 200],
+  ["/", 204],
+  ["/worlds/7", 200],
+  ["/worlds/7", 204],
+] as const)(
+  "confirms cascade deletion with one request from %s and empty HTTP %i",
+  async (route, status) => {
+    deleteStatus = status;
+    await renderSignedIn(route);
+    const openLabel = route === "/" ? "Delete" : "Delete world";
+    await click(openLabel);
+    const dialog = host.querySelector("dialog")!;
+    expect(dialog.textContent).toContain("Delete “Test world”?");
+    expect(dialog.textContent).toContain(
+      "all characters and locations associated with it",
+    );
+    expect(dialog.textContent).toContain("This action cannot be undone.");
+    expect(calls.filter((call) => call.method === "DELETE")).toEqual([]);
+    expect(document.activeElement?.textContent).toBe("Cancel");
+    await click("Cancel", dialog);
+    expect(host.querySelector("dialog")).toBeNull();
+    expect(calls.some((call) => call.method === "DELETE")).toBe(false);
+    await click(openLabel);
+    empty = true;
+    await click("Delete world", host.querySelector("dialog")!);
+    await act(async () =>
+      window.dispatchEvent(new HashChangeEvent("hashchange")),
+    );
+    expect(calls.filter((call) => call.method === "DELETE")).toEqual([
+      {
+        path: "/api/worlds/7",
+        method: "DELETE",
+        body: undefined,
+      },
+    ]);
+    expect(window.location.hash).toBe("#/");
+    expect(host.querySelector("dialog")).toBeNull();
+    expect(host.textContent).toContain("Your worlds");
+    expect(host.textContent).toContain("Every story begins with a world");
+  },
+);
+
+it("keeps a failed world deletion open, hides raw server errors and allows retry", async () => {
+  await renderSignedIn("/worlds/7");
+  await click("Delete world");
+  const dialog = host.querySelector("dialog")!;
+  vi.mocked(fetch).mockResolvedValueOnce(
+    new Response("java.lang.IllegalStateException: internal detail", {
+      status: 500,
+    }),
+  );
+  await click("Delete world", dialog);
+  expect(host.querySelector("dialog")).toBe(dialog);
+  expect(dialog.querySelector('[role="alert"]')?.textContent).toContain(
+    "The server could not delete this world",
+  );
+  expect(dialog.querySelector('[role="alert"]')?.textContent).toContain(
+    "HTTP 500",
+  );
+  expect(dialog.querySelector('[role="alert"]')?.textContent).not.toContain(
+    "connection",
+  );
+  expect(host.textContent).not.toContain("java.lang");
+  expect(host.querySelector(".feedback")?.textContent).toBe("");
+  expect(window.location.hash).toBe("#/worlds/7");
+  expect(
+    dialog.querySelector<HTMLButtonElement>(".danger-confirm")!.disabled,
+  ).toBe(false);
+  await click("Delete world", dialog);
+  expect(host.querySelector("dialog")).toBeNull();
+  expect(window.location.hash).toBe("#/");
+});
+
+it.each([403, 404, 409, 503])(
+  "keeps HTTP %i deletion failures distinct from connectivity errors",
+  async (status) => {
+    await renderSignedIn("/worlds/7");
+    await click("Delete world");
+    const dialog = host.querySelector("dialog")!;
+    const credential = `Basic ${btoa("Archivist:password")}`;
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(`Authorization: ${credential}`, { status }),
+    );
+    await click("Delete world", dialog);
+    expect(host.querySelector("dialog")).toBe(dialog);
+    expect(dialog.querySelector('[role="alert"]')?.textContent).toContain(
+      `HTTP ${status}`,
+    );
+    expect(dialog.textContent).not.toContain(credential);
+    expect(dialog.textContent).not.toContain("Authorization");
+    expect(dialog.textContent).not.toContain("check your connection");
+    expect(window.location.hash).toBe("#/worlds/7");
+  },
+);
+
+it("keeps transport failures open and advises checking the result before retrying", async () => {
+  await renderSignedIn("/worlds/7");
+  await click("Delete world");
+  const dialog = host.querySelector("dialog")!;
+  vi.mocked(fetch).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+  await click("Delete world", dialog);
+  expect(host.querySelector("dialog")).toBe(dialog);
+  expect(dialog.querySelector('[role="alert"]')?.textContent).toContain(
+    "Could not confirm whether this world was deleted",
+  );
+  expect(dialog.querySelector('[role="alert"]')?.textContent).toContain(
+    "refresh the collection before retrying",
+  );
+  expect(
+    dialog.querySelector<HTMLButtonElement>(".danger-confirm")!.disabled,
+  ).toBe(false);
+  expect(window.location.hash).toBe("#/worlds/7");
+});
+
+it("retains navigation links and uses explicit buttons for world actions", async () => {
   await renderSignedIn();
-  await click("Delete");
-  await click("Keep entry");
-  expect(calls.some((call) => call.method === "DELETE")).toBe(false);
-  await click("Delete");
-  await click("Delete permanently");
-  expect(calls).toContainEqual({
-    path: "/api/worlds/7",
-    method: "DELETE",
-    body: undefined,
+  expect(host.querySelector(".brand")?.getAttribute("href")).toBe("#/");
+  expect(host.querySelector(".nav-link")?.getAttribute("href")).toBe("#/");
+  expect(host.querySelector(".world-card > a")?.getAttribute("href")).toBe(
+    "#/worlds/7",
+  );
+  expect(
+    Array.from(host.querySelectorAll("main button")).every(
+      (button) => button.getAttribute("type") === "button",
+    ),
+  ).toBe(true);
+  await act(async () => {
+    window.location.hash = "/worlds/7";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
   });
+  expect(host.querySelector(".back")?.getAttribute("href")).toBe("#/");
+  expect(host.querySelectorAll(".tabs a, .actions a")).toHaveLength(0);
+  expect(
+    Array.from(host.querySelectorAll("main button")).every(
+      (button) => button.getAttribute("type") === "button",
+    ),
+  ).toBe(true);
+  const route = window.location.hash;
+  const skip = host.querySelector<HTMLAnchorElement>(".skip-link")!;
+  await act(async () => skip.click());
+  expect(document.activeElement).toBe(host.querySelector("main"));
+  expect(window.location.hash).toBe(route);
+});
+
+it("does not persist or log credentials across failed login, navigation, logout and remount", async () => {
+  const storage = vi.spyOn(Storage.prototype, "setItem");
+  const database = vi.fn();
+  vi.stubGlobal("indexedDB", { open: database });
+  const consoleCalls = ["log", "info", "warn", "error", "debug"].map((method) =>
+    vi.spyOn(console, method as "log" | "info" | "warn" | "error" | "debug"),
+  );
+  authenticated = false;
+  acceptLogin = true;
+  await render("/worlds/7");
+  await input("login-username", "Archivist");
+  await input("login-password", "wrong-password");
+  await submit();
+  expect(host.querySelector(".sidebar")).toBeNull();
+  await login();
+  expect(host.textContent).toContain("People of this world");
+  await act(async () => {
+    window.location.hash = "/";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  });
+  expect(host.querySelector(".account-name")?.textContent).toBe("Archivist");
+  await openAccount();
+  await click("Sign out", host.querySelector("dialog")!);
+  const count = calls.length;
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await render("/worlds/7");
+  expect(host.querySelector(".sidebar")).toBeNull();
+  expect(calls).toHaveLength(count);
+  expect(storage).not.toHaveBeenCalled();
+  expect(database).not.toHaveBeenCalled();
+  expect(document.cookie).toBe("");
+  for (const spy of consoleCalls) expect(spy).not.toHaveBeenCalled();
+});
+
+it("guards pending deletion against rapid double clicks and Escape", async () => {
+  await renderSignedIn("/worlds/7");
+  await click("Delete world");
+  let finish!: (response: Response) => void;
+  vi.mocked(fetch).mockImplementationOnce(
+    () =>
+      new Promise<Response>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const dialog = host.querySelector("dialog")!;
+  const confirm = dialog.querySelector<HTMLButtonElement>(".danger-confirm")!;
+  await act(async () => {
+    confirm.click();
+    confirm.click();
+  });
+  expect(confirm.disabled).toBe(true);
+  expect(confirm.textContent).toBe("Deleting…");
+  expect(
+    Array.from(dialog.querySelectorAll("button")).every(
+      (button) => button.disabled,
+    ),
+  ).toBe(true);
+  await act(async () =>
+    dialog.dispatchEvent(new Event("cancel", { cancelable: true })),
+  );
+  expect(host.querySelector("dialog")).toBe(dialog);
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.filter((call) => call[1]?.method === "DELETE")
+      .map((call) => call[0]),
+  ).toEqual(["/api/worlds/7"]);
+  await act(async () => finish(new Response(null, { status: 204 })));
+  expect(host.querySelector("dialog")).toBeNull();
+});
+
+it("labels the modal, traps Tab at both ends and restores focus on Escape", async () => {
+  await renderSignedIn("/worlds/7");
+  const trigger = host.querySelector<HTMLButtonElement>(
+    ".world-heading .danger",
+  )!;
+  trigger.focus();
+  await act(async () => trigger.click());
+  const dialog = host.querySelector("dialog")!;
+  expect(dialog.getAttribute("role")).toBe("dialog");
+  expect(dialog.getAttribute("aria-modal")).toBe("true");
+  expect(
+    document.getElementById(dialog.getAttribute("aria-labelledby")!)
+      ?.textContent,
+  ).toContain("Test world");
+  expect(
+    document.getElementById(dialog.getAttribute("aria-describedby")!)
+      ?.textContent,
+  ).toContain("characters and locations");
+  expect(document.activeElement?.textContent).toBe("Cancel");
+  expect(dialog.querySelector("form")).toBeNull();
+  const buttons = Array.from(dialog.querySelectorAll("button"));
+  expect(buttons.every((button) => button.type === "button")).toBe(true);
+  buttons.at(-1)!.focus();
+  await act(async () =>
+    buttons.at(-1)!.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Tab",
+        bubbles: true,
+        cancelable: true,
+      }),
+    ),
+  );
+  expect(document.activeElement).toBe(buttons[0]);
+  await act(async () =>
+    buttons[0].dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Tab",
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    ),
+  );
+  expect(document.activeElement).toBe(buttons.at(-1));
+  // Native <dialog> translates Escape to the cancel event; jsdom does not.
+  await act(async () =>
+    dialog.dispatchEvent(new Event("cancel", { cancelable: true })),
+  );
+  expect(host.querySelector("dialog")).toBeNull();
+  expect(document.activeElement).toBe(trigger);
+  expect(calls.some((call) => call.method === "DELETE")).toBe(false);
 });
 
 it("creates a character with numeric age and validates input bounds", async () => {
@@ -585,7 +844,10 @@ it("views, edits and deletes a character within its world", async () => {
     },
   });
   await click("Delete");
-  await click("Delete permanently");
+  expect(host.querySelector("dialog")!.textContent).toContain(
+    "This character will be permanently removed.",
+  );
+  await click("Delete character");
   expect(calls).toContainEqual({
     path: "/api/characters/3",
     method: "DELETE",
@@ -638,7 +900,10 @@ it("creates, views, edits and deletes locations with the request/response descri
     },
   });
   await click("Delete");
-  await click("Delete permanently");
+  expect(host.querySelector("dialog")!.textContent).toContain(
+    "This location will be permanently removed.",
+  );
+  await click("Delete location");
   expect(calls).toContainEqual({
     path: "/api/locations/2",
     method: "DELETE",

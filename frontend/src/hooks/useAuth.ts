@@ -9,7 +9,8 @@ export function useAuth() {
   const [signedOut, setSignedOut] = useState(false);
   const revision = useRef(0);
   useEffect(() => {
-    // Every mount starts a new, explicit-login-only frontend session.
+    // Basic credentials live only in page memory. After refresh, verifying the
+    // user requires credentials again until the backend offers a session/token lifecycle.
     clearAuthorization();
     const unsubscribe = onUnauthorized(() => {
       ++revision.current;

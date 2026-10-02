@@ -4,7 +4,7 @@
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  background: #203e35;
+  background: var(--archive-green-deep);
 }
 .auth-brand,
 .auth-main,
@@ -12,7 +12,7 @@
   position: relative;
 }
 .auth-brand {
-  padding: 32px 48px;
+  padding: var(--space-xl) var(--page-gutter);
   color: #e9ede3;
 }
 .auth-brand .brand {
@@ -28,10 +28,10 @@
   flex: 1;
   width: 100%;
   max-width: 960px;
-  padding: 12px 32px 32px;
+  padding: clamp(12px, 3vh, 40px) 32px 32px;
   display: grid;
   justify-items: center;
-  align-content: center;
+  align-content: start;
   gap: 28px;
 }
 .auth-intro {
@@ -51,9 +51,9 @@
 }
 .auth-frame {
   width: min(100%, 440px);
-  border: 1px solid #dce1d4;
+  border: 1px solid var(--archive-border);
   border-radius: 7px;
-  background: #f8f7f2;
+  background: var(--archive-ivory);
   box-shadow: 0 24px 80px #102b2538;
   overflow: hidden;
 }
@@ -61,7 +61,7 @@
   margin: 24px 32px 0;
   font-size: 12px;
   line-height: 1.7;
-  color: #738074;
+  color: var(--archive-muted);
 }
 .auth-navigation {
   margin: 0 32px;
@@ -83,35 +83,31 @@
   color: #36573e;
 }
 .auth-panels {
-  display: grid;
   overflow: hidden;
 }
 .auth-panel {
-  grid-area: 1 / 1;
   min-width: 0;
-  transition:
-    transform 220ms ease,
-    opacity 220ms ease,
-    visibility 220ms;
+}
+.auth-panel[aria-hidden="true"] {
+  display: none;
+}
+.auth-panel[aria-hidden="false"] {
+  animation: auth-reveal 180ms ease-out;
+}
+.auth-panel:focus-visible {
+  outline-offset: -4px;
 }
 .auth-panel .registration-card {
   border: 0;
   background: transparent;
 }
-.auth-register-panel {
-  transform: translateX(12px);
-  opacity: 0;
-  visibility: hidden;
-}
-.is-register .auth-register-panel {
-  transform: translateX(0);
-  opacity: 1;
-  visibility: visible;
-}
-.is-register .auth-login-panel {
-  transform: translateX(-12px);
-  opacity: 0;
-  visibility: hidden;
+@keyframes auth-reveal {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .auth-footer {
   text-align: center;
@@ -128,6 +124,14 @@
   .auth-main {
     padding: 12px 22px 24px;
     gap: 20px;
+  }
+  .auth-intro .eyebrow {
+    max-width: 30ch;
+    margin-inline: auto;
+  }
+  .auth-intro h1 {
+    max-width: 15ch;
+    margin-inline: auto;
   }
 }
 @media (max-width: 420px) {

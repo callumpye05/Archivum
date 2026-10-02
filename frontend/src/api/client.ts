@@ -92,7 +92,7 @@ export async function request<T>(
     text = await response.text();
   } catch {
     throw new Error(
-      "Could not reach Archivum. Check that the backend is running, then try again.",
+      "Could not reach Archivum. Check your connection and try again.",
     );
   } finally {
     pendingRequests.delete(controller);
@@ -118,8 +118,8 @@ export async function request<T>(
     if (response.status >= 500)
       message =
         method === "DELETE"
-          ? "The backend could not delete this entry. A world with characters or locations may need those entries removed first."
-          : "The backend could not complete the request. Check the backend connection and logs, then retry.";
+          ? "Unable to delete this entry. Please try again."
+          : "Archivum could not complete the request. Please try again.";
     throw new ApiError(
       typeof message === "string" && message
         ? message

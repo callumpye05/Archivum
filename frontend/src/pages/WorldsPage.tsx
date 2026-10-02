@@ -2,7 +2,8 @@ import { useState } from "react";
 import * as api from "../api";
 import type { World } from "../types";
 import { useResource } from "../hooks/useResource";
-import { Empty, ErrorState, Loading, dateLabel } from "../components/States";
+import { Empty, ErrorState, Loading } from "../components/States";
+import { FeedbackMessage } from "../components/FeedbackMessage";
 import { EntryForm, worldFields } from "../components/EntryForm";
 import { DeleteDialog } from "../components/DeleteDialog";
 
@@ -19,25 +20,39 @@ export function WorldsPage() {
           <h1>Your worlds</h1>
           <p>A home for the people, places, and stories you imagine.</p>
         </div>
-        <button className="primary" onClick={() => setEditing("new")}>
+        <button
+          type="button"
+          className="primary"
+          onClick={() => setEditing("new")}
+        >
           ＋ Create world
         </button>
       </header>
-      {notice && (
-        <div className="notice" role="status">
-          {notice}
-        </div>
-      )}
+      <FeedbackMessage message={notice} onDismiss={setNotice} />
       <div className="section-label">
-        WORLD ARCHIVE <span>{data?.length ?? "—"} worlds</span>
+        WORLD ARCHIVE{" "}
+        <span>
+          {data?.length ?? "—"} {data?.length === 1 ? "world" : "worlds"}
+        </span>
       </div>
       {loading ? (
         <Loading />
       ) : error ? (
         <ErrorState message={error} retry={reload} />
       ) : !data?.length ? (
-        <Empty title="Every story begins with a world">
-          Create your first world to start creating its people and places.
+        <Empty
+          title="Every story begins with a world"
+          action={
+            <button
+              type="button"
+              className="primary"
+              onClick={() => setEditing("new")}
+            >
+              Create your first world
+            </button>
+          }
+        >
+          A place for your people, your landscapes, your unwritten stories.
         </Empty>
       ) : (
         <div className="world-grid">
@@ -55,22 +70,26 @@ export function WorldsPage() {
                     WORLD / {String(world.worldId).padStart(2, "0")}
                   </p>
                   <h2>{world.worldName || "Untitled world"}</h2>
-                  <p className="excerpt">
+                  <p
+                    className={`excerpt${world.worldDesc ? "" : " placeholder"}`}
+                  >
                     {world.worldDesc || "A world waiting to be described."}
                   </p>
                   <footer>
-                    <span>Explore  world ↗</span>
+                    <span>Explore world ↗</span>
                   </footer>
                 </div>
               </a>
               <div className="world-actions">
                 <button
+                  type="button"
                   aria-label={`Edit ${world.worldName || "world"}`}
                   onClick={() => setEditing(world)}
                 >
                   Edit
                 </button>
                 <button
+                  type="button"
                   className="danger"
                   aria-label={`Delete ${world.worldName || "world"}`}
                   onClick={() => setDeleting(world)}
@@ -90,21 +109,19 @@ export function WorldsPage() {
           initial={
             editing === "new"
               ? {}
-              : { worldName: editing.worldName,worldDesc: editing.worldDesc }
+              : { worldName: editing.worldName, worldDesc: editing.worldDesc }
           }
-          onClose={() =>setEditing(null)}
+          onClose={() => setEditing(null)}
           onSave={async (values) => {
             const dto = {
               worldName: values.worldName,
               worldDesc: values.worldDesc,
             };
-            if (editing === "new")   {
-              const world =await api.createWorld(dto);
+            if (editing === "new") {
+              const world = await api.createWorld(dto);
               setEditing(null);
               window.location.hash = `/worlds/${world.worldId}`;
-            }
-            else
-            {
+            } else {
               await api.updateWorld(editing.worldId, dto);
               setEditing(null);
               setNotice("World updated.");
@@ -116,10 +133,9 @@ export function WorldsPage() {
       {deleting && (
         <DeleteDialog
           name={deleting.worldName}
-          isWorld
+          kind="world"
           onClose={() => setDeleting(null)}
-          onDelete={async () =>
-          {
+          onDelete={async () => {
             await api.deleteWorld(deleting.worldId);
             setDeleting(null);
             setNotice("World deleted.");

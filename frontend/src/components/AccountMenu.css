@@ -1,12 +1,12 @@
 .account-control {
   position: relative;
-  flex-shrink: 0;
+  min-width: 0;
 }
 .account-trigger {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 12px;
+  gap: 10px;
+  font-size: var(--font-small);
   background: transparent;
 }
 .account-name {
@@ -14,6 +14,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-right: 10px;
+  border-right: 1px solid var(--archive-border);
+  color: var(--archive-ink);
 }
 .account-actions {
   position: absolute;
@@ -22,14 +25,14 @@
   z-index: 5;
   width: min(260px, calc(100vw - 44px));
   padding: 8px;
-  border: 1px solid #dce1d4;
+  border: 1px solid var(--archive-border);
   border-radius: 7px;
-  background: #f8f7f2;
+  background: var(--archive-ivory);
   box-shadow: 0 10px 25px #243b3010;
 }
 .account-actions p {
   margin: 8px 10px 12px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
@@ -39,7 +42,7 @@
   text-align: left;
   border: 0;
   background: transparent;
-  font-size: 12px;
+  font-size: var(--font-small);
 }
 .account-actions button:hover {
   background: #ecefe8;
@@ -48,6 +51,10 @@
   .account-trigger {
     padding: 8px 10px;
     gap: 8px;
+  }
+  .account-name {
+    max-width: 20vw;
+    padding-right: 8px;
   }
   .topbar {
     gap: 12px;
