@@ -2,12 +2,11 @@
 
 ## Now
 -  (DONE) Finish resource ownership integration tests (currently done with world but need to do character and location)
+- (DONE) CASCADE DELETION and updated front end. 
 
 ## Probably next
--   Cascade World deletion to Characters and Locations
--   Adapt front end in accordance 
--   Test cascade deletion boundaries
 -   Email verification
+-   fix user refreshing page and getting signed out
 
 ## Later
 - GET /users/me
