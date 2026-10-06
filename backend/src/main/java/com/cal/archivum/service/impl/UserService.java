@@ -3,6 +3,7 @@ package com.cal.archivum.service.impl;
 import com.cal.archivum.dto.impl.CreateUserDto;
 import com.cal.archivum.dto.impl.UpdateUserDto;
 import com.cal.archivum.dto.impl.UserResponseDto;
+import com.cal.archivum.entity.EmailVerificationToken;
 import com.cal.archivum.entity.User;
 import com.cal.archivum.exception.EmailAlreadyUsed;
 import com.cal.archivum.exception.UserNotFoundByEmailOrUsername;
@@ -18,12 +19,14 @@ import org.springframework.stereotype.Service;
 public class UserService implements IUserService {
 
     private final UserRepository userRepo;
+    private final EmailVerificationTokenService emailVerificationTokenService;
 
 
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepo, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepo, EmailVerificationTokenService emailVerificationTokenService, PasswordEncoder passwordEncoder) {
         this.userRepo = userRepo;
+        this.emailVerificationTokenService = emailVerificationTokenService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -33,11 +36,14 @@ public class UserService implements IUserService {
 
 
 
-
     @Override
     public UserResponseDto createUser(CreateUserDto createUser) {
-        return toUserResponse(userRepo.save(fromCreateDto(createUser)));
+        User user = fromCreateDto(createUser);
+        userRepo.save(user);
+        //TODO : Add SMTP provider and write the send email method in EmailVerificationService
+        String token = emailVerificationTokenService.createEmailVerificationToken(user);
 
+        return toUserResponse(user);
     }
 
 
