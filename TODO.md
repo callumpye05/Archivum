@@ -7,8 +7,10 @@
 ## Probably next
 -   Email verification
 -   fix user refreshing page and getting signed out
+-  fix CSRF being disabled
 
 ## Later
+- Exception handler is too vague it doesn't specify what request is being invoked
 - GET /users/me
 - Replace HTTP Basic with a proper authentication lifecycle
 - Password reset
