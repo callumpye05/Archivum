@@ -21,7 +21,7 @@ public class ArchivumSecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(csrf -> csrf.disable()).authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/register").permitAll().requestMatchers(HttpMethod.POST, "/auth/verify-email").permitAll()
                         .anyRequest().authenticated()
                 ).httpBasic(Customizer.withDefaults()).build();
     }

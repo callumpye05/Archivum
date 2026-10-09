@@ -8,6 +8,7 @@ import com.cal.archivum.exception.EmailAlreadyUsed;
 import com.cal.archivum.exception.UserNotFoundByEmailOrUsername;
 import com.cal.archivum.exception.UsernameAlreadyUsed;
 import com.cal.archivum.repository.UserRepository;
+import com.cal.archivum.service.impl.EmailService;
 import com.cal.archivum.service.impl.EmailVerificationTokenService;
 import com.cal.archivum.service.impl.UserService;
 
@@ -41,7 +42,12 @@ class UserServiceTest {
 
     private UserService userService;
 
+    @Mock
+    private EmailService emailService;
+
     private User testUser;
+
+    @Mock
     private EmailVerificationTokenService emailVerificationTokenService;
 
 
@@ -49,7 +55,7 @@ class UserServiceTest {
     void setUp() {
 
         userService =
-                new UserService(userRepo,emailVerificationTokenService,passwordEncoder);
+                new UserService(userRepo,emailVerificationTokenService,passwordEncoder, emailService);
 
         testUser = new User();
         testUser.setId(1L);
@@ -92,23 +98,15 @@ class UserServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
 
-        UserResponseDto result =
-                userService.createUser(dto);
+        UserResponseDto result =userService.createUser(dto);
 
 
-        assertEquals(
-                "test_user",
-                result.userName()
-        );
+        assertEquals("test_user", result.userName());
 
-        assertEquals(
-                "test@archivum.local",
-                result.email()
-        );
+        assertEquals("test@archivum.local", result.email());
 
 
-        ArgumentCaptor<User> userCaptor =
-                ArgumentCaptor.forClass(User.class);
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
         verify(userRepo)
                 .save(userCaptor.capture());
