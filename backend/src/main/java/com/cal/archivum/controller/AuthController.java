@@ -3,6 +3,7 @@ package com.cal.archivum.controller;
 
 import com.cal.archivum.dto.EmailVerificationDto;
 import com.cal.archivum.dto.impl.CreateUserDto;
+import com.cal.archivum.dto.impl.EmailVerificationTokenDto;
 import com.cal.archivum.dto.impl.UserResponseDto;
 import com.cal.archivum.entity.User;
 import com.cal.archivum.service.IEmailVerificationTokenService;
@@ -32,7 +33,7 @@ public class AuthController {
     }
 
     @PostMapping("/verify-email")
-    public ResponseEntity<Void> verifyEmail(@RequestBody EmailVerificationDto dto){
+    public ResponseEntity<Void> verifyEmail(@RequestBody EmailVerificationTokenDto dto){
         emailVerificationTokenService.verifyEmail(dto.token());
         return ResponseEntity.ok().build();
     }

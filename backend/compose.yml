@@ -9,3 +9,10 @@ services:
       MYSQL_DATABASE: archivum
     volumes:
       - /Users/callumpye/Desktop/archivum-data:/var/lib/mysql
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: archivum-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"

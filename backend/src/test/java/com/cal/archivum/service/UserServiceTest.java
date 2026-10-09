@@ -8,6 +8,7 @@ import com.cal.archivum.exception.EmailAlreadyUsed;
 import com.cal.archivum.exception.UserNotFoundByEmailOrUsername;
 import com.cal.archivum.exception.UsernameAlreadyUsed;
 import com.cal.archivum.repository.UserRepository;
+import com.cal.archivum.service.impl.EmailVerificationTokenService;
 import com.cal.archivum.service.impl.UserService;
 
 import org.junit.jupiter.api.AfterEach;
@@ -41,16 +42,14 @@ class UserServiceTest {
     private UserService userService;
 
     private User testUser;
+    private EmailVerificationTokenService emailVerificationTokenService;
 
 
     @BeforeEach
     void setUp() {
 
         userService =
-                new UserService(
-                        userRepo,
-                        passwordEncoder
-                );
+                new UserService(userRepo,emailVerificationTokenService,passwordEncoder);
 
         testUser = new User();
         testUser.setId(1L);

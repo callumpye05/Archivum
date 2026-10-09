@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateUserDto(
+
         @NotNull
         @Size(max = 100)
         String userName,

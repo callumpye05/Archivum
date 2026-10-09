@@ -6,7 +6,6 @@
 
 ## Probably next
 -   Email verification
--  Shift towards constructors instead of setters
 -   fix user refreshing page and getting signed out
 -  fix CSRF being disabled
 

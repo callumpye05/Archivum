@@ -9,7 +9,9 @@ import com.cal.archivum.exception.EmailAlreadyUsed;
 import com.cal.archivum.exception.UserNotFoundByEmailOrUsername;
 import com.cal.archivum.exception.UsernameAlreadyUsed;
 import com.cal.archivum.repository.UserRepository;
+import com.cal.archivum.service.IEmailService;
 import com.cal.archivum.service.IUserService;
+import jakarta.transaction.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,14 +22,14 @@ public class UserService implements IUserService {
 
     private final UserRepository userRepo;
     private final EmailVerificationTokenService emailVerificationTokenService;
-
-
     private final PasswordEncoder passwordEncoder;
+    private final IEmailService emailService;
 
-    public UserService(UserRepository userRepo, EmailVerificationTokenService emailVerificationTokenService, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepo, EmailVerificationTokenService emailVerificationTokenService, PasswordEncoder passwordEncoder, IEmailService emailService) {
         this.userRepo = userRepo;
         this.emailVerificationTokenService = emailVerificationTokenService;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     private UserResponseDto toUserResponse(User user) {
@@ -35,14 +37,13 @@ public class UserService implements IUserService {
     }
 
 
-
+    @Transactional
     @Override
     public UserResponseDto createUser(CreateUserDto createUser) {
         User user = fromCreateDto(createUser);
         userRepo.save(user);
-        //TODO : Add SMTP provider and write the send email method in EmailVerificationService
         String token = emailVerificationTokenService.createEmailVerificationToken(user);
-
+        emailService.sendVerificationEmail(user.getEmail(), token);
         return toUserResponse(user);
     }
 

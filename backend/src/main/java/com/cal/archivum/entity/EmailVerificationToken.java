@@ -11,7 +11,7 @@ import java.time.Instant;
 public class EmailVerificationToken {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name= "token_id" , nullable = false)
     private int id;
 
