@@ -3,6 +3,7 @@ package com.cal.archivum.controller;
 import com.cal.archivum.dto.impl.CreateUserDto;
 import com.cal.archivum.dto.impl.UserResponseDto;
 import com.cal.archivum.exception.EmailAlreadyUsed;
+import com.cal.archivum.exception.EmailVerificationTokenExpired;
 import com.cal.archivum.exception.UsernameAlreadyUsed;
 import com.cal.archivum.security.ArchivumSecurityConfig;
 import com.cal.archivum.service.IEmailVerificationTokenService;
@@ -230,6 +231,22 @@ class AuthControllerTest {
                     }""")).andExpect(status().isOk());
         verify(tokenService).verifyEmail("example-raw-token");
     }
+
+
+    @Test
+    void verificationEmail_WithInvalidToken_ShouldReturnErrorMessage() throws Exception {
+
+        doThrow(new EmailVerificationTokenExpired()).when(tokenService).verifyEmail("example-raw-token");
+
+        mockMvc.perform(post("/auth/verify-email").contentType(MediaType.APPLICATION_JSON).content("""
+                    {
+                        "token": "example-raw-token"
+                        
+                    }""")).andExpect(status().isBadRequest());
+
+        verify(tokenService).verifyEmail("example-raw-token");
+    }
+
 
 
 
