@@ -21,6 +21,7 @@ import tools.jackson.databind.ObjectMapper;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -174,4 +175,34 @@ class UserControllerTest {
         verify(userService)
                 .deleteUser();
     }
+
+    // =========================================================
+    // GET USER
+    // =========================================================
+
+    @Test
+    void getMe_shouldReturn_200_whenUserIsAuthenticated() throws Exception {
+
+
+
+        when(userService.getCurrentUserInDtoFormat())
+                .thenReturn(testUserResponse);
+
+        mockMvc.perform(get("/users/me")
+                        .with(user("test_user")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userName").value("test_user"))
+                .andExpect(jsonPath("$.email").value("test@archivum.local"));
+
+        verify(userService).getCurrentUserInDtoFormat();
+    }
+    @Test
+    @WithAnonymousUser
+    void getMe_shouldReturn_404_whenUserIsUnauthenticated() throws Exception {
+        mockMvc.perform(get("/users/me")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(userService);
+    }
+
+
+
 }

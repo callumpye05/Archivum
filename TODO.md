@@ -3,10 +3,11 @@
 ## Now
 -  (DONE) Finish resource ownership integration tests (currently done with world but need to do character and location)
 - (DONE) CASCADE DELETION and updated front end. 
+- (DONE) Email Verification on backend
 
 ## Probably next
--   Email verification
--   fix user refreshing page and getting signed out
+-  GET /users/me and corresponding tests
+-  fix user refreshing page and getting signed out
 -  fix CSRF being disabled
 
 ## Later
