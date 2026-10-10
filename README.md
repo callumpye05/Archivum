@@ -154,3 +154,12 @@ being designed around technologies in isolation.
 
 it also works hand in hand with my courses, reinforcing what I'm learning, as right now I have : Software Testing, Concurrent Programming, Big Data and a course focused on a full-stack project. 
 
+
+
+## What am I working on right now? 
+
+
+As of October 2026 , my focus has been on email verification for new users. Essentially I've learnt to manipulate mailpit and spring mail. For the time being, I'm going to skip
+the front end aspect of a verification page, simply because I intend on redoing the front end myself, once my frontend skills catch up to my backend skills. Most of what I plan for the rest of
+October is the following : re-enable CSRF, implement GET/users/me , conduct research on Flyway in order for data migrations ( though much later as theory is needed) and finally a CI with Github Actions.
+As I continue, I will still dedicate time to doing smaller tasks, but these are the main tasks I'm setting for myself. 
