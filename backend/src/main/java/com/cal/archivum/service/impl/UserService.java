@@ -3,12 +3,15 @@ package com.cal.archivum.service.impl;
 import com.cal.archivum.dto.impl.CreateUserDto;
 import com.cal.archivum.dto.impl.UpdateUserDto;
 import com.cal.archivum.dto.impl.UserResponseDto;
+import com.cal.archivum.entity.EmailVerificationToken;
 import com.cal.archivum.entity.User;
 import com.cal.archivum.exception.EmailAlreadyUsed;
 import com.cal.archivum.exception.UserNotFoundByEmailOrUsername;
 import com.cal.archivum.exception.UsernameAlreadyUsed;
 import com.cal.archivum.repository.UserRepository;
+import com.cal.archivum.service.IEmailService;
 import com.cal.archivum.service.IUserService;
+import jakarta.transaction.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,13 +21,15 @@ import org.springframework.stereotype.Service;
 public class UserService implements IUserService {
 
     private final UserRepository userRepo;
-
-
+    private final EmailVerificationTokenService emailVerificationTokenService;
     private final PasswordEncoder passwordEncoder;
+    private final IEmailService emailService;
 
-    public UserService(UserRepository userRepo, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepo, EmailVerificationTokenService emailVerificationTokenService, PasswordEncoder passwordEncoder, IEmailService emailService) {
         this.userRepo = userRepo;
+        this.emailVerificationTokenService = emailVerificationTokenService;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     private UserResponseDto toUserResponse(User user) {
@@ -32,12 +37,14 @@ public class UserService implements IUserService {
     }
 
 
-
-
+    @Transactional
     @Override
     public UserResponseDto createUser(CreateUserDto createUser) {
-        return toUserResponse(userRepo.save(fromCreateDto(createUser)));
-
+        User user = fromCreateDto(createUser);
+        userRepo.save(user);
+        String token = emailVerificationTokenService.createEmailVerificationToken(user);
+        emailService.sendVerificationEmail(user.getEmail(), token);
+        return toUserResponse(user);
     }
 
 

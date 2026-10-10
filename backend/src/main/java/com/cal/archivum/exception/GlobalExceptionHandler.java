@@ -55,6 +55,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
+    @ExceptionHandler (EmailVerificationTokenNotFound.class)
+    public ResponseEntity<String> handleEmailVerificationTokenNotFound(EmailVerificationTokenNotFound ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+    @ExceptionHandler (EmailVerificationTokenExpired.class)
+    public ResponseEntity<String> handleEmailVerificationTokenExpired(EmailVerificationTokenExpired ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
 
 
 }

@@ -3,8 +3,10 @@ package com.cal.archivum.controller;
 import com.cal.archivum.dto.impl.CreateUserDto;
 import com.cal.archivum.dto.impl.UserResponseDto;
 import com.cal.archivum.exception.EmailAlreadyUsed;
+import com.cal.archivum.exception.EmailVerificationTokenExpired;
 import com.cal.archivum.exception.UsernameAlreadyUsed;
 import com.cal.archivum.security.ArchivumSecurityConfig;
+import com.cal.archivum.service.IEmailVerificationTokenService;
 import com.cal.archivum.service.IUserService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -36,6 +39,10 @@ class AuthControllerTest {
 
     @MockitoBean
     private IUserService userService;
+
+    @MockitoBean
+    private IEmailVerificationTokenService tokenService;
+
 
     private UserResponseDto testUserResponse;
 
@@ -216,4 +223,31 @@ class AuthControllerTest {
                         any(CreateUserDto.class)
                 );
     }
+    @Test
+    void verificationEmail_shouldReturn2OOok() throws Exception {
+        mockMvc.perform(post("/auth/verify-email").contentType(MediaType.APPLICATION_JSON).content("""
+                    {
+                        "token": "example-raw-token"
+                    }""")).andExpect(status().isOk());
+        verify(tokenService).verifyEmail("example-raw-token");
+    }
+
+
+    @Test
+    void verificationEmail_WithInvalidToken_ShouldReturnErrorMessage() throws Exception {
+
+        doThrow(new EmailVerificationTokenExpired()).when(tokenService).verifyEmail("example-raw-token");
+
+        mockMvc.perform(post("/auth/verify-email").contentType(MediaType.APPLICATION_JSON).content("""
+                    {
+                        "token": "example-raw-token"
+                        
+                    }""")).andExpect(status().isBadRequest());
+
+        verify(tokenService).verifyEmail("example-raw-token");
+    }
+
+
+
+
 }

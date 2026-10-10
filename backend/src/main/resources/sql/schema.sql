@@ -3,9 +3,20 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) UNIQUE NOT NULL,
     user_name VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    verified_user BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL
     );
 
+
+
+
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    token_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    expiration_date TIMESTAMP NOT NULL,
+    hashed_token VARCHAR(64) NOT NULL,
+    user_id BIGINT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
 
 
 
