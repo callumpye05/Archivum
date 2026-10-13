@@ -10,10 +10,8 @@ import com.cal.archivum.service.IEmailVerificationTokenService;
 import com.cal.archivum.service.IUserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -37,4 +35,10 @@ public class AuthController {
         emailVerificationTokenService.verifyEmail(dto.token());
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/csrf")
+    public CsrfToken csrf(CsrfToken token) {
+        return token;
+    }
+
 }

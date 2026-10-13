@@ -12,10 +12,10 @@
 
 ## Later
 - Exception handler is too vague it doesn't specify what request is being invoked
+- Add backend validations using jakarta annotations onto controller methods
 - GET /users/me
 - Replace HTTP Basic with a proper authentication lifecycle
 - Password reset
 - Flyway database migrations
-- Also want to send an email to verify the users email. 
 
 that sounds like a good start
