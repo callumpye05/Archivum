@@ -53,19 +53,27 @@ public class SecurityFilterTests {
 
         @Test
         void login_should_create_authenticated_session() throws Exception {
-            MvcResult loginResult =mockMvc.perform(post("/auth/login").with(csrf()).param("username", "archivum_test").param("password", "TestPassword123!")).andExpect(status().isOk()).andReturn();
+            MvcResult loginResult =mockMvc.perform(post("/auth/login").with(csrf()).param("username", "archivum_verified").param("password", "TestPassword123!")).andExpect(status().isOk()).andReturn();
 
             MockHttpSession session= (MockHttpSession) loginResult.getRequest().getSession(false);
             assertNotNull(session);
-            mockMvc.perform(get("/users/me").session(session)).andExpect(status().isOk()).andExpect(jsonPath("$.userName").value("archivum_test"));
+            mockMvc.perform(get("/users/me").session(session)).andExpect(status().isOk()).andExpect(jsonPath("$.userName").value("archivum_verified"));
         }
 
 
         @Test
         void login_shouldReturn401_whenPasswordIsIncorrect() throws Exception {
 
-            mockMvc.perform(post("/auth/login").with(csrf()).param("username", "archivum_test").param("password", "WrongPassword123!")).andExpect(status().isUnauthorized());
+            mockMvc.perform(post("/auth/login").with(csrf()).param("username", "archivum_verified").param("password", "WrongPassword123!")).andExpect(status().isUnauthorized());
         }
+
+        @Test
+        void login_should_return_403_whenEmailIsntVerified() throws Exception {
+
+            mockMvc.perform(post("/auth/login").with(csrf()).param("username", "archivum_test").param("password", "TestPassword123!")).andExpect(status().isUnauthorized());
+        }
+
+
 
         @Test
         void login_shouldReturn403_whenCsrfIsMissing() throws Exception {
@@ -80,7 +88,7 @@ public class SecurityFilterTests {
 
         @Test
         void logout_shouldInvalidateAuthenticatedSession() throws Exception {
-            MvcResult loginResult =mockMvc.perform(post("/auth/login").with(csrf()).param("username", "archivum_test").param("password","TestPassword123!")).andExpect(status().isOk()).andReturn();
+            MvcResult loginResult =mockMvc.perform(post("/auth/login").with(csrf()).param("username", "archivum_verified").param("password","TestPassword123!")).andExpect(status().isOk()).andReturn();
             MockHttpSession session= (MockHttpSession) loginResult.getRequest().getSession(false);
             assertNotNull(session);
             mockMvc.perform(post("/auth/logout").session(session).with(csrf())).andExpect(status().isNoContent());
@@ -89,7 +97,7 @@ public class SecurityFilterTests {
 
         @Test
         void getMe_shouldReturn401_afterLogout() throws Exception{
-            MvcResult loginResult = mockMvc.perform(post("/auth/login").with(csrf()).param("username", "archivum_test").param("password", "TestPassword123!")).andExpect(status().isOk()).andReturn();
+            MvcResult loginResult = mockMvc.perform(post("/auth/login").with(csrf()).param("username", "archivum_verified").param("password", "TestPassword123!")).andExpect(status().isOk()).andReturn();
             MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
             assertNotNull(session);
 

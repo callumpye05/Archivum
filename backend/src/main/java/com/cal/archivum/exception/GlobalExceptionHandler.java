@@ -65,6 +65,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 
+    @ExceptionHandler(EmailNotVerified.class)
+    public ResponseEntity<String> handleEmailNotVerified(EmailNotVerified ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
+    }
+
 
 
 }
