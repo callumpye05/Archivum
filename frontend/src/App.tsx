@@ -7,6 +7,8 @@ import { AccountMenu } from "./components/AccountMenu";
 export default function App() {
   const auth = useAuth();
   const [hash, setHash] = useState(window.location.hash);
+  const [logoutError, setLogoutError] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
   useEffect(() => {
     const update = () => setHash(window.location.hash);
     window.addEventListener("hashchange", update);
@@ -26,7 +28,38 @@ export default function App() {
   const match = hash.match(/^#\/worlds\/(\d+)$/);
   const register = hash === "#/register";
   const pageTitle = match ? "World overview" : "Worlds";
-  if (auth.status === "guest") {
+  if (auth.status === "loading") {
+    return (
+      <main className="entry-card">
+        <p role="status">Checking your session…</p>
+      </main>
+    );
+  }
+  //EmailService sends a real path and query string
+  if (window.location.pathname === "/verify-email") {
+    return (
+      <AuthLanding
+        register={false}
+        login={auth.login}
+        verificationToken={new URLSearchParams(window.location.search).get(
+          "token",
+        )}
+      />
+    );
+  }
+  if (auth.status === "error"){
+    return(
+      <main className="entry-card">
+        <p role="alert">
+          Could not check your session. Check your connection and try again.
+        </p>
+        <button type="button" onClick={() => void auth.checkSession()}>
+          Try again
+        </button>
+      </main>
+    );
+  }
+  if(auth.status === "guest") {
     return (
       <AuthLanding
         register={register}
@@ -45,7 +78,7 @@ export default function App() {
           document.getElementById("main-content")?.focus();
         }}
       >
-        Skip to content
+          Skip to content
       </a>
       <aside className="sidebar">
         <a href="#/" className="brand">
@@ -75,14 +108,32 @@ export default function App() {
           <AccountMenu
             username={auth.username!}
             onSave={auth.saveAccount}
-            onSignOut={() => {
-              auth.logout();
-              window.history.replaceState(null, "", "#/login");
-              setHash("#/login");
+            signingOut={loggingOut}
+            signOutError={logoutError}
+            onSignOut={async () => {
+              if (loggingOut) return;
+              setLoggingOut(true);
+              setLogoutError("");
+              try {
+                await auth.logout();
+                window.history.replaceState(null, "", "#/login");
+                setHash("#/login");
+              }catch {
+                setLogoutError(
+                  "Could not sign out. Check your connection and try again.",
+                );
+              }finally {
+                setLoggingOut(false);
+              }
             }}
           />
         </div>
         <main id="main-content" tabIndex={-1}>
+          {logoutError && (
+            <p className="inline-error" role="alert">
+              {logoutError}
+            </p>
+          )}
           {match ? (
             <WorldDetailPage key={match[1]} id={Number(match[1])} />
           ) : (

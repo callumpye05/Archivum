@@ -15,6 +15,8 @@ import type {
 } from "../types";
 export const registerUser = (data: RegisterDto) =>
   request<RegisteredUser>("/auth/register", "POST", data);
+export const verifyEmail = (token: string) =>
+  request<void>("/auth/verify-email", "POST", { token });
 export const getWorlds = () => request<World[]>("/worlds");
 export const getWorld = (id: number) => request<World>(`/worlds/${id}`);
 export const createWorld = (data: CreateWorldDto) =>

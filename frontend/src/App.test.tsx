@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import App from "./App";
-import { clearAuthorization, request, signIn } from "./api/client";
+import { request } from "./api/client";
 
 let root: Root;
 let host: HTMLDivElement;
@@ -39,11 +39,11 @@ const calls: {
 let failure = false;
 let empty = false;
 let authenticated = true;
-let acceptLogin = false;
+let acceptLogin = true;
+let apiFetch: ReturnType<typeof vi.fn>;
 let deleteStatus = 204;
 
 beforeEach(() => {
-  clearAuthorization();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
     configurable: true,
@@ -57,46 +57,70 @@ beforeEach(() => {
       this.open = false;
     },
   });
-  window.location.hash = "/";
+  window.history.replaceState(null, "", "/#/");
   failure = false;
   empty = false;
-  authenticated = true;
-  acceptLogin = false;
+  authenticated = false;
+  acceptLogin = true;
   deleteStatus = 204;
   calls.length = 0;
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (path: string, options: RequestInit) => {
-      const method = options.method || "GET";
-      calls.push({
-        path,
-        method,
-        body: options.body ? JSON.parse(String(options.body)) : undefined,
-      });
-      if (path === "/api/auth/register")
-        return new Response(
-          JSON.stringify({ userName: "Archivist", email: "a@example.com" }),
-        );
+  apiFetch = vi.fn(async (path: string, options: RequestInit) => {
+    const method = options.method || "GET";
+    calls.push({
+      path,
+      method,
+      body: options.body
+        ? path === "/api/auth/login"
+          ? Object.fromEntries(new URLSearchParams(String(options.body)))
+          : JSON.parse(String(options.body))
+        : undefined,
+    });
+    if (path === "/api/auth/register")
+      return new Response(
+        JSON.stringify({ userName: "Archivist", email: "a@example.com" }),
+      );
+    if (path === "/api/auth/login") {
+      const form = new URLSearchParams(String(options.body));
       if (
-        acceptLogin &&
-        new Headers(options.headers).get("Authorization") ===
-          `Basic ${btoa("Archivist:password")}`
+        !acceptLogin ||
+        form.get("username") !== "Archivist" ||
+        form.get("password") !== "password"
       )
-        authenticated = true;
-      if (!authenticated) return new Response("Unauthorized", { status: 401 });
-      if (failure) return new Response("Save rejected", { status: 400 });
-      if (method === "DELETE")
-        return new Response(null, { status: deleteStatus });
-      let value: unknown = world;
-      if (path === "/api/worlds") value = empty ? [] : [world];
-      else if (path.endsWith("/characters"))
-        value = method === "GET" ? [character] : character;
-      else if (path.endsWith("/locations"))
-        value = method === "GET" ? [location] : location;
-      else if (path.endsWith("/characters/3")) value = character;
-      else if (path.endsWith("/locations/2")) value = location;
-      return new Response(JSON.stringify(value));
-    }),
+        return new Response(null, { status: 401 });
+      authenticated = true;
+      return new Response(null);
+    }
+    if (path === "/api/auth/logout") {
+      authenticated = false;
+      return new Response(null, { status: 204 });
+    }
+    if (!authenticated) return new Response("Unauthorized", { status: 401 });
+    if (failure) return new Response("Save rejected", { status: 400 });
+    if (method === "DELETE")
+      return new Response(null, { status: deleteStatus });
+    if (path === "/api/users/me")
+      return Response.json({
+        userName: options.body
+          ? JSON.parse(String(options.body)).userName || "Archivist"
+          : "Archivist",
+        email: "a@example.com",
+      });
+    let value: unknown = world;
+    if (path === "/api/worlds") value = empty ? [] : [world];
+    else if (path.endsWith("/characters"))
+      value = method === "GET" ? [character] : character;
+    else if (path.endsWith("/locations"))
+      value = method === "GET" ? [location] : location;
+    else if (path.endsWith("/characters/3")) value = character;
+    else if (path.endsWith("/locations/2")) value = location;
+    return new Response(JSON.stringify(value));
+  });
+  vi.stubGlobal("fetch", (path: string, options: RequestInit) =>
+    path === "/api/auth/csrf"
+      ? Promise.resolve(
+          Response.json({ headerName: "X-CSRF-TOKEN", token: "test-csrf" }),
+        )
+      : apiFetch(path, options),
   );
   host = document.createElement("div");
   document.body.append(host);
@@ -105,7 +129,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  clearAuthorization();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -163,18 +186,20 @@ async function openAccount() {
   await click("Account", host.querySelector("#account-actions")!);
 }
 it.each(["/", "/worlds/7", "/register"])(
-  "starts guest at %s without probing even if browser access would succeed",
+  "checks the session and displays the guest forms at %s",
   async (hash) => {
     await render(hash);
     expect(host.querySelector(".auth-landing")).toBeTruthy();
     expect(host.querySelector(".sidebar")).toBeNull();
     expect(host.querySelectorAll(".auth-navigation button")).toHaveLength(2);
     expect(host.querySelector(".auth-navigation a")).toBeNull();
-    expect(calls).toEqual([]);
+    expect(calls).toEqual([
+      { path: "/api/users/me", method: "GET", body: undefined },
+    ]);
   },
 );
 it.each([false, true])(
-  "requires explicit login after remount, with sign out = %s",
+  "restores the session after remount unless signed out = %s",
   async (signOut) => {
     const storage = vi.spyOn(Storage.prototype, "setItem");
     await renderSignedIn();
@@ -194,14 +219,14 @@ it.each([false, true])(
     await act(async () => root.unmount());
     root = createRoot(host);
     await render("/worlds/7");
-    expect(host.querySelector(".auth-landing")).toBeTruthy();
-    expect(host.querySelector(".sidebar")).toBeNull();
-    expect(calls).toHaveLength(count);
-    await request("/worlds");
+    expect(!!host.querySelector(".auth-landing")).toBe(signOut);
+    expect(!!host.querySelector(".sidebar")).toBe(!signOut);
+    expect(calls[count].path).toBe("/api/users/me");
+    await act(async () => {
+      await request("/worlds").catch(() => {});
+    });
     expect(
-      new Headers(vi.mocked(fetch).mock.calls.at(-1)![1]?.headers).has(
-        "Authorization",
-      ),
+      new Headers(apiFetch.mock.calls.at(-1)![1]?.headers).has("Authorization"),
     ).toBe(false);
     expect(storage).not.toHaveBeenCalled();
   },
@@ -225,7 +250,7 @@ it("renders change-oriented settings and restores focus after closing", async ()
   expect(host.querySelector<HTMLInputElement>("#account-password")!.value).toBe(
     "",
   );
-  expect(calls.some((call) => call.path.includes("/me"))).toBe(false);
+  expect(calls.filter((call) => call.path === "/api/users/me")).toHaveLength(2);
   await act(async () =>
     host
       .querySelector<HTMLButtonElement>('[aria-label="Close dialog"]')!
@@ -246,7 +271,7 @@ it("renders change-oriented settings and restores focus after closing", async ()
   expect(host.querySelector("#account-actions")).toBeNull();
 });
 it.each([false, true])(
-  "updates identity with the exact DTO and coherent Basic credentials; password change = %s",
+  "saves a username change and ends the old session; password change = %s",
   async (changePassword) => {
     await renderSignedIn();
     await openAccount();
@@ -268,27 +293,13 @@ it.each([false, true])(
           }
         : { userName: "Renamed" },
     });
-    expect(host.querySelector(".account-trigger")?.textContent).toContain(
-      "Renamed",
-    );
-    expect(host.querySelector("dialog")?.textContent).toContain(
-      "Account updated",
-    );
+    expect(host.querySelector(".auth-landing")).toBeTruthy();
     expect(
-      host.querySelector<HTMLInputElement>("#account-password")!.value,
-    ).toBe("");
-    expect(
-      host.querySelector<HTMLInputElement>("#account-confirmation")!.value,
-    ).toBe("");
-    await request("/worlds");
-    expect(
-      new Headers(vi.mocked(fetch).mock.calls.at(-1)![1]?.headers).get(
-        "Authorization",
+      calls.some(
+        (call) => call.path === "/api/auth/logout" && call.method === "POST",
       ),
-    ).toBe(
-      "Basic " +
-        btoa("Renamed:" + (changePassword ? "new-password" : "password")),
-    );
+    ).toBe(true);
+    expect(authenticated).toBe(false);
   },
 );
 it("validates password confirmation before sending an update", async () => {
@@ -322,34 +333,8 @@ it("preserves identity after a rejected update and clears password fields", asyn
   failure = false;
   await request("/worlds");
   expect(
-    new Headers(vi.mocked(fetch).mock.calls.at(-1)![1]?.headers).get(
-      "Authorization",
-    ),
-  ).toBe("Basic " + btoa("Archivist:password"));
-});
-
-it("cancels pending requests and prevents a late sign-in from restoring cleared credentials", async () => {
-  let finish!: (response: Response) => void;
-  const fetch = vi
-    .fn()
-    .mockImplementationOnce(
-      () =>
-        new Promise<Response>((resolve) => {
-          finish = resolve;
-        }),
-    )
-    .mockResolvedValue(new Response("[]"));
-  vi.stubGlobal("fetch", fetch);
-  const pending = signIn("Archivist", "password");
-  const signal = fetch.mock.calls[0][1].signal as AbortSignal;
-  clearAuthorization();
-  expect(signal.aborted).toBe(true);
-  finish(new Response("[]"));
-  await expect(pending).rejects.toThrow("Sign-in was cancelled");
-  await request("/worlds");
-  expect(new Headers(fetch.mock.calls[1][1].headers).has("Authorization")).toBe(
-    false,
-  );
+    new Headers(apiFetch.mock.calls.at(-1)![1]?.headers).get("Authorization"),
+  ).toBeNull();
 });
 
 it("switches forms without advancing the panorama and redirects legacy routes", async () => {
@@ -378,7 +363,9 @@ it("switches forms without advancing the panorama and redirects legacy routes", 
   ).toBe(true);
   expect(host.querySelector(".is-active img")?.getAttribute("src")).toBe(image);
   expect(host.querySelector('[aria-roledescription="carousel"]')).toBeNull();
-  expect(calls).toEqual([]);
+  expect(calls).toEqual([
+    { path: "/api/users/me", method: "GET", body: undefined },
+  ]);
 });
 
 it.each(["/", "/login", "/register", "/explore", "/panorama"])(
@@ -400,7 +387,7 @@ it.each(["/", "/login", "/register", "/explore", "/panorama"])(
   },
 );
 
-it("logs in through existing HTTP Basic, handles rejection, and resumes a world deep link", async () => {
+it("logs in through session form login, handles rejection, and resumes a world deep link", async () => {
   authenticated = false;
   acceptLogin = true;
   const storage = vi.spyOn(Storage.prototype, "setItem");
@@ -419,7 +406,7 @@ it("logs in through existing HTTP Basic, handles rejection, and resumes a world 
   expect(host.textContent).toContain("People of this world");
   expect(window.location.hash).toBe("#/worlds/7");
   expect(host.querySelector(".auth-landing")).toBeNull();
-  expect(calls.some((call) => call.path.includes("auth/login"))).toBe(false);
+  expect(calls.some((call) => call.path.includes("auth/login"))).toBe(true);
   expect(storage).not.toHaveBeenCalled();
   storage.mockRestore();
   // A later protected request returning 401 removes the workspace immediately.
@@ -431,6 +418,32 @@ it("logs in through existing HTTP Basic, handles rejection, and resumes a world 
   expect(host.querySelector(".auth-landing")).toBeTruthy();
   expect(host.querySelector(".sidebar")).toBeNull();
 });
+
+it.each([
+  ["INVALID_CREDENTIALS", "The username or password wasn't recognized"],
+  ["EMAIL_NOT_VERIFIED", "Please verify your email before logging in"],
+])(
+  "explains login error %s and keeps protected pages hidden",
+  async (code, message) => {
+    await render("/worlds/7");
+    apiFetch.mockResolvedValueOnce(Response.json({ code }, { status: 401 }));
+    await login();
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+      message,
+    );
+    expect(host.querySelector(".sidebar")).toBeNull();
+    expect(authenticated).toBe(false);
+    expect(host.querySelector<HTMLInputElement>("#login-password")?.value).toBe(
+      "",
+    );
+    expect(
+      apiFetch.mock.calls.filter(([path]) => path === "/api/users/me"),
+    ).toHaveLength(1);
+    // A rejected login must still allow another attempt after correcting the issue.
+    await login();
+    expect(host.querySelector(".sidebar")).toBeTruthy();
+  },
+);
 
 it("keeps a newly registered visitor in the shared guest flow until login", async () => {
   authenticated = false;
@@ -563,7 +576,7 @@ it("keeps a failed world deletion open, hides raw server errors and allows retry
   await renderSignedIn("/worlds/7");
   await click("Delete world");
   const dialog = host.querySelector("dialog")!;
-  vi.mocked(fetch).mockResolvedValueOnce(
+  apiFetch.mockResolvedValueOnce(
     new Response("java.lang.IllegalStateException: internal detail", {
       status: 500,
     }),
@@ -596,8 +609,8 @@ it.each([403, 404, 409, 503])(
     await renderSignedIn("/worlds/7");
     await click("Delete world");
     const dialog = host.querySelector("dialog")!;
-    const credential = `Basic ${btoa("Archivist:password")}`;
-    vi.mocked(fetch).mockResolvedValueOnce(
+    const credential = "private-server-detail";
+    apiFetch.mockResolvedValueOnce(
       new Response(`Authorization: ${credential}`, { status }),
     );
     await click("Delete world", dialog);
@@ -616,7 +629,7 @@ it("keeps transport failures open and advises checking the result before retryin
   await renderSignedIn("/worlds/7");
   await click("Delete world");
   const dialog = host.querySelector("dialog")!;
-  vi.mocked(fetch).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+  apiFetch.mockRejectedValueOnce(new TypeError("Failed to fetch"));
   await click("Delete world", dialog);
   expect(host.querySelector("dialog")).toBe(dialog);
   expect(dialog.querySelector('[role="alert"]')?.textContent).toContain(
@@ -689,7 +702,7 @@ it("does not persist or log credentials across failed login, navigation, logout 
   root = createRoot(host);
   await render("/worlds/7");
   expect(host.querySelector(".sidebar")).toBeNull();
-  expect(calls).toHaveLength(count);
+  expect(calls).toHaveLength(count + 1);
   expect(storage).not.toHaveBeenCalled();
   expect(database).not.toHaveBeenCalled();
   expect(document.cookie).toBe("");
@@ -700,7 +713,7 @@ it("guards pending deletion against rapid double clicks and Escape", async () =>
   await renderSignedIn("/worlds/7");
   await click("Delete world");
   let finish!: (response: Response) => void;
-  vi.mocked(fetch).mockImplementationOnce(
+  apiFetch.mockImplementationOnce(
     () =>
       new Promise<Response>((resolve) => {
         finish = resolve;
@@ -724,9 +737,8 @@ it("guards pending deletion against rapid double clicks and Escape", async () =>
   );
   expect(host.querySelector("dialog")).toBe(dialog);
   expect(
-    vi
-      .mocked(fetch)
-      .mock.calls.filter((call) => call[1]?.method === "DELETE")
+    apiFetch.mock.calls
+      .filter((call) => call[1]?.method === "DELETE")
       .map((call) => call[0]),
   ).toEqual(["/api/worlds/7"]);
   await act(async () => finish(new Response(null, { status: 204 })));
@@ -969,4 +981,158 @@ it("auth action buttons retain hash navigation, back/forward, and independent pa
   );
   expect(window.location.hash).toBe("#/login");
   expect(host.querySelector(".is-active img")).toBe(image);
+});
+
+it("keeps the workspace hidden while checking a session, then restores it", async () => {
+  let finish!: (response: Response) => void;
+  apiFetch.mockImplementationOnce(
+    () =>
+      new Promise<Response>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  await render("/worlds/7");
+  expect(host.textContent).toContain("Checking your session");
+  expect(host.querySelector(".auth-landing, .sidebar")).toBeNull();
+  authenticated = true;
+  await act(async () =>
+    finish(Response.json({ userName: "Archivist", email: "a@example.com" })),
+  );
+  expect(host.textContent).toContain("People of this world");
+  expect(calls.some((call) => call.path === "/api/auth/login")).toBe(false);
+});
+
+it("allows retry after a startup connection error without redirecting", async () => {
+  apiFetch.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+  await render("/worlds/7");
+  expect(host.textContent).toContain("Could not check your session");
+  expect(host.querySelector(".auth-landing, .sidebar")).toBeNull();
+  authenticated = true;
+  await click("Try again");
+  expect(host.textContent).toContain("People of this world");
+  expect(window.location.hash).toBe("#/worlds/7");
+});
+
+it("waits for backend logout, keeps a failed logout visible, and permits retry", async () => {
+  await renderSignedIn();
+  await openAccount();
+  let finish!: (response: Response) => void;
+  apiFetch.mockImplementationOnce(
+    () =>
+      new Promise<Response>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const dialog = host.querySelector("dialog")!;
+  await click("Sign out", dialog);
+  expect(host.querySelector(".sidebar")).toBeTruthy();
+  const button = Array.from(dialog.querySelectorAll("button")).find((button) =>
+    button.textContent?.includes("Signing out"),
+  )!;
+  expect(button.disabled).toBe(true);
+  await act(async () => finish(new Response(null, { status: 503 })));
+  expect(dialog.textContent).toContain("Could not sign out");
+  expect(authenticated).toBe(true);
+  await click("Sign out", dialog);
+  expect(authenticated).toBe(false);
+  expect(host.querySelector(".auth-landing")).toBeTruthy();
+});
+
+it("processes the real email URL once in StrictMode and does not log the visitor in", async () => {
+  const token = "a".repeat(64);
+  const respond = apiFetch.getMockImplementation()!;
+  apiFetch.mockImplementation((path, options) =>
+    path === "/api/auth/verify-email"
+      ? Promise.resolve(new Response(null))
+      : respond(path, options),
+  );
+  window.history.replaceState(null, "", "/verify-email?token=" + token);
+  await act(async () =>
+    root.render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    ),
+  );
+  expect(host.textContent).toContain("Your email has been verified");
+  expect(host.textContent).toContain("Continue to login");
+  expect(host.querySelector(".sidebar, form")).toBeNull();
+  expect(authenticated).toBe(false);
+  const verification = apiFetch.mock.calls.filter(
+    ([path]) => path === "/api/auth/verify-email",
+  );
+  expect(verification).toHaveLength(1);
+  expect(verification[0][1]).toMatchObject({
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+  expect(apiFetch.mock.calls.some(([path]) => path === "/api/auth/login")).toBe(
+    false,
+  );
+});
+
+it.each([
+  ["", "missing its token"],
+  ["?token=", "missing its token"],
+  ["?token=not-a-token", "link is invalid"],
+])(
+  "handles a malformed email link %s without submitting it",
+  async (query, message) => {
+    window.history.replaceState(null, "", "/verify-email" + query);
+    await render();
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+      message,
+    );
+    expect(
+      apiFetch.mock.calls.some(([path]) => path === "/api/auth/verify-email"),
+    ).toBe(false);
+  },
+);
+
+it.each([
+  [400, "This Email Verification Token Has Expired", "link has expired"],
+  [
+    404,
+    "Email Verification Token not found",
+    "invalid or has already been used",
+  ],
+  [403, "Forbidden", "could not confirm"],
+  [500, "Server error", "could not confirm"],
+])(
+  "handles verification HTTP %i without exposing the token",
+  async (status, body, message) => {
+    const token = "b".repeat(64);
+    const respond = apiFetch.getMockImplementation()!;
+    apiFetch.mockImplementation((path, options) =>
+      path === "/api/auth/verify-email"
+        ? Promise.resolve(new Response(body + token, { status }))
+        : respond(path, options),
+    );
+    window.history.replaceState(null, "", "/verify-email?token=" + token);
+    await render();
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+      message,
+    );
+    expect(host.textContent).not.toContain(token);
+    expect(host.querySelector(".sidebar")).toBeNull();
+  },
+);
+
+it("handles a lost verification response without claiming it failed on the server", async () => {
+  const respond = apiFetch.getMockImplementation()!;
+  apiFetch.mockImplementation((path, options) =>
+    path === "/api/auth/verify-email"
+      ? Promise.reject(new TypeError("Failed to fetch"))
+      : respond(path, options),
+  );
+  window.history.replaceState(
+    null,
+    "",
+    "/verify-email?token=" + "c".repeat(64),
+  );
+  await render();
+  expect(host.textContent).toContain(
+    "could not confirm your email verification",
+  );
+  expect(host.textContent).toContain("If it already succeeded");
 });

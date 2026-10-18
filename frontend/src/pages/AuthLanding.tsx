@@ -3,17 +3,25 @@ import { ApiError } from "../api/client";
 import { PanoramaViewer } from "../components/PanoramaViewer";
 import { demoPanoramas } from "../data/panoramas";
 import { RegisterPage } from "./RegisterPage";
+import { VerifyEmailPage } from "./VerifyEmailPage";
 import "./AuthLanding.css";
 
 export function AuthLanding({
   register,
   login,
   signedOut = false,
+  verificationToken,
 }: {
   register: boolean;
   login: (username: string, password: string) => Promise<void>;
   signedOut?: boolean;
+  verificationToken?: string | null;
 }) {
+  const verifying = verificationToken !== undefined;
+  function navigate(path: string) {
+    if (verifying) window.location.assign(`/#${path}`);
+    else window.location.hash = path;
+  }
   const previousMode = useRef(register);
   const loginPanel = useRef<HTMLDivElement>(null);
   const registerPanel = useRef<HTMLDivElement>(null);
@@ -32,7 +40,7 @@ export function AuthLanding({
         <button
           type="button"
           onClick={() => {
-            window.location.hash = "/login";
+            navigate("/login");
           }}
           className="brand"
         >
@@ -54,46 +62,52 @@ export function AuthLanding({
               Signed out. Log in to open your archive again.
             </p>
           )}
-          <nav className="auth-navigation tabs" aria-label="Account">
-            <button
-              type="button"
-              onClick={() => {
-                window.location.hash = "/login";
-              }}
-              aria-current={!register ? "page" : undefined}
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                window.location.hash = "/register";
-              }}
-              aria-current={register ? "page" : undefined}
-            >
-              Create account
-            </button>
-          </nav>
-          <div className="auth-panels">
-            <div
-              ref={loginPanel}
-              tabIndex={-1}
-              className="auth-panel auth-login-panel"
-              inert={register}
-              aria-hidden={register}
-            >
-              <LoginForm login={login} />
+          {!verifying && (
+            <nav className="auth-navigation tabs" aria-label="Account">
+              <button
+                type="button"
+                onClick={() => {
+                  navigate("/login");
+                }}
+                aria-current={!register ? "page" : undefined}
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  navigate("/register");
+                }}
+                aria-current={register ? "page" : undefined}
+              >
+                Create account
+              </button>
+            </nav>
+          )}
+          {verifying ? (
+            <VerifyEmailPage token={verificationToken} />
+          ) : (
+            <div className="auth-panels">
+              <div
+                ref={loginPanel}
+                tabIndex={-1}
+                className="auth-panel auth-login-panel"
+                inert={register}
+                aria-hidden={register}
+              >
+                <LoginForm login={login} />
+              </div>
+              <div
+                ref={registerPanel}
+                tabIndex={-1}
+                className="auth-panel auth-register-panel"
+                inert={!register}
+                aria-hidden={!register}
+              >
+                <RegisterPage />
+              </div>
             </div>
-            <div
-              ref={registerPanel}
-              tabIndex={-1}
-              className="auth-panel auth-register-panel"
-              inert={!register}
-              aria-hidden={!register}
-            >
-              <RegisterPage />
-            </div>
-          </div>
+          )}
         </div>
       </main>
       <footer className="auth-footer">
@@ -128,13 +142,19 @@ function LoginForm({
       password.value = "";
       await pending;
     } catch (error) {
-      setError(
-        error instanceof ApiError && error.status === 401
-          ? "The username or password wasn't recognized. Please try again."
-          : error instanceof Error
-            ? error.message
-            : "Unable to log in. Please try again.",
-      );
+      if (error instanceof ApiError && error.code === "EMAIL_NOT_VERIFIED") {
+        setError(
+          "Please verify your email before logging in. Open the verification link in the email sent when you registered.",
+        );
+      } else if (error instanceof ApiError && error.status === 401) {
+        setError(
+          "The username or password wasn't recognized. Please try again.",
+        );
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Unable to log in. Please try again.");
+      }
     } finally {
       password.value = "";
       submitting.current = false;
@@ -158,8 +178,6 @@ function LoginForm({
               name="username"
               autoComplete="username"
               required
-              pattern="[^:]+"
-              title="Enter your username without a colon."
             />
           </label>
           <label htmlFor="login-password">

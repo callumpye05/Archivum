@@ -1,4 +1,4 @@
-import type { UpdateUserDto } from "../types";
+import type { RegisteredUser, UpdateUserDto } from "../types";
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL || "/api").replace(
   /\/$/,
@@ -8,23 +8,17 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
+    public readonly code?: string,
   ) {
     super(message);
     this.name = "ApiError";
   }
 }
-// HTTP Basic is the backend's existing authentication mechanism. Keep the
-// credential in memory only; never persist it in browser storage.
-let credentials: { username: string; password: string } | undefined;
-function basicAuthorization(value = credentials) {
-  if (!value) return undefined;
-  const bytes = new TextEncoder().encode(`${value.username}:${value.password}`);
-  return `Basic ${btoa(Array.from(bytes, (byte) => String.fromCharCode(byte)).join(""))}`;
-}
+// Cookies belong to the browser. This counter only ignores responses from an
+// earlier session; no password or session identifier is kept in JavaScript.
 let authRevision = 0;
 const pendingRequests = new Set<AbortController>();
-export function clearAuthorization() {
-  credentials = undefined;
+function cancelSessionRequests() {
   authRevision += 1;
   pendingRequests.forEach((controller) => controller.abort());
   pendingRequests.clear();
@@ -37,56 +31,69 @@ export function onUnauthorized(listener: () => void) {
   };
 }
 export async function signIn(username: string, password: string) {
-  const revision = authRevision;
-  const candidate = { username, password };
-  await request("/worlds", "GET", undefined, basicAuthorization(candidate));
-  if (revision !== authRevision)
-    throw new Error("Sign-in was cancelled. Please try again.");
-  credentials = candidate;
+  await request<void>(
+    "/auth/login",
+    "POST",
+    new URLSearchParams({ username, password }),
+  );
+  cancelSessionRequests();
+  return getCurrentUser();
 }
-// Commit new Basic credentials only after the existing endpoint accepts the
-// change, using the password supplied at explicit login or its new replacement.
+export const getCurrentUser = () => request<RegisteredUser>("/users/me");
+
+export async function signOut() {
+  await request<void>("/auth/logout", "POST");
+  cancelSessionRequests();
+}
+
 export async function updateCurrentUser(data: UpdateUserDto): Promise<string> {
-  const current = credentials;
-  const revision = authRevision;
-  if (!current) throw new Error("Please log in to update your account.");
-  await request<void>("/users/me", "PUT", data);
-  if (revision !== authRevision || credentials !== current)
-    throw new Error("Your sign-in changed. Please log in again.");
-  const next = {
-    username: data.userName ?? current.username,
-    password: data.password ?? current.password,
-  };
-  // Cancel older requests so an old credential's late 401 cannot undo the update.
-  clearAuthorization();
-  credentials = next;
-  return next.username;
+  const user = await request<RegisteredUser>("/users/me", "PUT", data);
+  return user.userName;
 }
+
+interface CsrfToken {
+  headerName: string;
+  token: string;
+}
+
 export async function request<T>(
   path: string,
   method = "GET",
   body?: unknown,
-  credential = basicAuthorization(),
 ): Promise<T> {
   const revision = authRevision;
+  const headers: Record<string, string> = { Accept: "application/json" };
+  // Fetch before every write. This also picks up tokens replaced by login,
+  // logout, an expired session, or another tab, without a token cache.
+  if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
+    const csrf = await request<CsrfToken>("/auth/csrf");
+    headers[csrf.headerName] = csrf.token;
+  }
+  if (revision !== authRevision && !path.startsWith("/auth/")) {
+    throw new Error("Your session changed. Please try again.");
+  }
+  if (body !== undefined) {
+    headers["Content-Type"] =
+      body instanceof URLSearchParams
+        ? "application/x-www-form-urlencoded"
+        : "application/json";
+  }
   const controller = new AbortController();
-  pendingRequests.add(controller);
+  // A startup 401 must not cancel public registration or verification requests.
+  if (!path.startsWith("/auth/")) pendingRequests.add(controller);
   let response: Response;
   let text: string;
   try {
     response = await fetch(`${baseUrl}${path}`, {
       method,
-      // Authenticate only with the explicit in-memory header, never ambient
-      // browser cookies or cached HTTP Basic credentials.
-      credentials: "omit",
-      headers: {
-        Accept: "application/json",
-        // Let Spring return a 401 to the form without a browser Basic-auth dialog.
-        "X-Requested-With": "XMLHttpRequest",
-        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
-        ...(credential ? { Authorization: credential } : {}),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      credentials: "include",
+      headers,
+      body:
+        body === undefined
+          ? undefined
+          : body instanceof URLSearchParams
+            ? body.toString()
+            : JSON.stringify(body),
       signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
     });
     text = await response.text();
@@ -101,15 +108,16 @@ export async function request<T>(
     if (
       response.status === 401 &&
       revision === authRevision &&
-      credential &&
-      credential === basicAuthorization()
+      !path.startsWith("/auth/")
     ) {
-      clearAuthorization();
+      cancelSessionRequests();
       unauthorizedListeners.forEach((listener) => listener());
     }
     let message = text;
+    let code: string | undefined;
     try {
       const error = JSON.parse(text);
+      if (typeof error.code === "string") code = error.code;
       message =
         error.detail || error.message || error.error || response.statusText;
     } catch {
@@ -125,6 +133,7 @@ export async function request<T>(
         ? message
         : `Request failed (${response.status}).`,
       response.status,
+      code,
     );
   }
   return text ? (JSON.parse(text) as T) : (undefined as T);
