@@ -1,4 +1,4 @@
-package com.cal.archivum;
+package com.cal.archivum.security;
 
 import com.cal.archivum.repository.CharacterRepository;
 import com.cal.archivum.repository.LocationRepository;
@@ -108,6 +108,9 @@ public class SecurityFilterTests {
             mockMvc.perform(get("/users/me").session(staleSession)).andExpect(status().isUnauthorized());
             assertTrue(session.isInvalid());
         }
+
+
+
 
 
 
