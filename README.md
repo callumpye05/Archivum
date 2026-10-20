@@ -169,3 +169,4 @@ As I continue, I will still dedicate time to doing smaller tasks, but these are 
 
 UPDATE : Session management is largely complete for now. It took longer than expected because the learning curve is steeper. Integration tests are still required. My next objective is to focus on fixing Exception handling and annotations within the different parts of the backend.
 I noticed through Madan Reddy's course, that my handling is quite weak and underdeveloped, and since system reliability is crucial, it seems like a neccessary step to take. 
+

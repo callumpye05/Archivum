@@ -17,3 +17,9 @@ One concern that they speak of is that transactional tests may produce false pos
 Furthermore, methods using Propagation .REQUIRED may join the transaction already established by the test framework. Although this is expected Spring behavior, it can result in tests executing under different transaction boundaries from those encountered in production, which is a bad practice.
 Consequently, I have added the creation of an isolated integration-testing environment to the TODO list. I intend to learn about Testcontainers.
 For the time being, the existing tests will serve as a temporary solution. However, I do not consider the integration-testing infrastructure complete ( I still have some more to do, but I will actively focus on the new isolated environment).
+
+## 10/20/2026 
+
+
+I researched the importance of Automatic testing in CI/CD through the documentation of Testcontainers. Then I integrated it and shifted ( earlier than expected) from @Transactional to 
+the new isolated test environment. 

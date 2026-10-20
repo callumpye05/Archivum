@@ -2,8 +2,6 @@ package com.cal.archivum.security;
 
 import com.cal.archivum.entity.User;
 import com.cal.archivum.repository.UserRepository;
-import jakarta.transaction.Transactional;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,6 +15,7 @@ import org.testcontainers.mysql.MySQLContainer;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -37,35 +36,62 @@ class AuthenticationIntegrationTests {
     @ServiceConnection
     static MySQLContainer mysql =new MySQLContainer("mysql:8.4");
 
-    @Test
-    void verified_user_can_login() throws Exception {
 
-        //given
+    private void createUser(String username, boolean verif){
         User user =new User();
-        user.setUserName("verified_test_integration");
-        user.setEmail("verified_test_integration@example.com");
+        user.setUserName(username);
+        user.setEmail(username +"@example.com");
         user.setUserHashedPassword(passwordEncoder.encode("TestPassword123!"));
-        user.setVerifiedUser(true);
-        userRepository.save(user);
+        user.setVerifiedUser(verif);
 
-        //when then
-        mockMvc.perform(post("/auth/login").with(csrf()).param("username", "verified_test_integration").param("password", "TestPassword123!")).andExpect(status().isOk());
+        userRepository.save(user);
     }
 
+    @Test
+    void verified_user_can_login() throws Exception {
+        // Given
+        createUser("verified_login_success", true);
+        //When /then
+        mockMvc.perform(post("/auth/login").with(csrf()).param("username", "verified_login_success").param("password", "TestPassword123!")).andExpect(status().isOk());
+    }
 
     @Test
     void unverified_user_cannot_login() throws Exception {
-
-        //given
-        User user = new User();
-        user.setUserName("unverified_test2");
-        user.setEmail("unverified_test2@example.com");
-        user.setUserHashedPassword(passwordEncoder.encode("TestPassword123!"));
-        user.setVerifiedUser(false);
-        userRepository.save(user);
-
-        mockMvc.perform(post("/auth/login").with(csrf()).param("username", "unverified_test2").param("password", "TestPassword123!")).andExpect(status().isUnauthorized());
+        // Given
+        createUser("unverified_login", false);
+        //When /then
+        mockMvc.perform(post("/auth/login").with(csrf()).param("username", "unverified_login").param("password", "TestPassword123!")).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("EMAIL_NOT_VERIFIED"));
     }
 
+    @Test
+    void verified_user_cannot_login_with_wrong_password() throws Exception {
+        // Given
+        createUser("verified_wrong_password", true);
+        //When /then
+        mockMvc.perform(post("/auth/login").with(csrf()).param("username", "verified_wrong_password").param("password", "TestPassword125555!")).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+    }
+    @Test
+    void unverified_user_cannot_login_with_wrong_password() throws Exception {
+        // Given
+        createUser("unverified_wrong_password", false);
+
+        //When /then
+        mockMvc.perform(post("/auth/login").with(csrf()).param("username", "unverified_wrong_password").param("password", "TestPassword125555!")).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    void verified_user_can_login_with_email() throws Exception {
+        //given
+        createUser("email_login_user", true);
+        //when/then
+
+        mockMvc.perform(post("/auth/login").with(csrf()).param("username", "email_login_user@example.com").param("password", "TestPassword123!")).andExpect(status().isOk());
+    }
+
+
+    @Test
+    void cannot_login_with_nonexistant_username() throws Exception {
+        mockMvc.perform(post("/auth/login").with(csrf()).param("username" , "fake_account@example.com").param("password", "FakePassword123!")).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+    }
 
 }

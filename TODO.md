@@ -17,5 +17,6 @@
 - Replace HTTP Basic with a proper authentication lifecycle
 - Password reset
 - Flyway database migrations
+- Add isolated test environment MySQL test containers
 
 that sounds like a good start

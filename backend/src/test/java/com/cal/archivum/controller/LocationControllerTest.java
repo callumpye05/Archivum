@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -30,15 +31,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(LocationController.class)
 @Import(ArchivumSecurityConfig.class)
-@WithMockUser(
-        username = "test_user",
-        roles = "USER"
-)
+@WithMockUser(username = "test_user",roles = "USER")
 class LocationControllerTest {
 
     @Autowired
@@ -49,6 +48,9 @@ class LocationControllerTest {
 
     @MockitoBean
     private ILocationService locationService;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
     private World testWorld;
     private Location testLocation;
@@ -337,42 +339,19 @@ class LocationControllerTest {
             throws Exception {
 
         CreateLocationDto dto =
-                new CreateLocationDto(
-                        "Ironshield",
-                        LocationType.CITY,
-                        "Industrial city"
-                );
+                new CreateLocationDto("Ironshield", LocationType.CITY, "Industrial city");
+        when(locationService.createLocation(any(CreateLocationDto.class), eq(2L))).thenReturn(testLocation);
 
-        when(
-                locationService.createLocation(
-                        any(CreateLocationDto.class),
-                        eq(2L)
-                )
-        )
-                .thenReturn(testLocation);
-
-        mockMvc.perform(
-                        post("/worlds/2/locations")
-                                .contentType(
-                                        "application/json"
-                                )
-                                .content(
-                                        objectMapper
-                                                .writeValueAsString(dto)
-                                )
-                )
+        mockMvc.perform(post("/worlds/2/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-
                 .andExpect(
                         jsonPath("$.id")
                                 .value(10L)
                 )
-
                 .andExpect(
                         jsonPath("$.locationName")
                                 .value("Ironspire")
                 )
-
                 .andExpect(
                         jsonPath("$.locationType")
                                 .value("CITY")
@@ -390,12 +369,8 @@ class LocationControllerTest {
     void createLocation_shouldReturn404_whenWorldDoesNotExist()
             throws Exception {
 
-        CreateLocationDto dto =
-                new CreateLocationDto(
-                        "Ironshield",
-                        LocationType.CITY,
-                        "A large city."
-                );
+        CreateLocationDto dto = new CreateLocationDto("Ironshield", LocationType.CITY, "A large city."
+        );
 
         when(
                 locationService.createLocation(
@@ -407,16 +382,7 @@ class LocationControllerTest {
                         new WorldNotFound(99L)
                 );
 
-        mockMvc.perform(
-                        post("/worlds/99/locations")
-                                .contentType(
-                                        "application/json"
-                                )
-                                .content(
-                                        objectMapper
-                                                .writeValueAsString(dto)
-                                )
-                )
+        mockMvc.perform(post("/worlds/99/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isNotFound());
 
         verify(locationService)
@@ -435,15 +401,9 @@ class LocationControllerTest {
     void updateLocation_shouldReturn200_whenRequestIsValid()
             throws Exception {
 
-        UpdateLocationDto dto =
-                new UpdateLocationDto(
-                        "Ironshield Prime",
-                        LocationType.DISTRICT,
-                        "Updated description"
-                );
+        UpdateLocationDto dto = new UpdateLocationDto("Ironshield Prime", LocationType.DISTRICT, "Updated description");
 
-        Location updatedLocation =
-                new Location();
+        Location updatedLocation = new Location();
 
         updatedLocation.setId(10L);
         updatedLocation.setLocationName(
@@ -457,38 +417,17 @@ class LocationControllerTest {
         );
         updatedLocation.setWorld(testWorld);
 
-        when(
-                locationService.updateLocation(
-                        eq(10L),
-                        any(UpdateLocationDto.class)
-                )
-        )
-                .thenReturn(updatedLocation);
+        when(locationService.updateLocation(eq(10L), any(UpdateLocationDto.class))).thenReturn(updatedLocation);
 
-        mockMvc.perform(
-                        put("/locations/10")
-                                .contentType(
-                                        "application/json"
-                                )
-                                .content(
-                                        objectMapper
-                                                .writeValueAsString(dto)
-                                )
-                )
+        mockMvc.perform(put("/locations/10").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-
                 .andExpect(
-                        jsonPath("$.id")
-                                .value(10L)
+                        jsonPath("$.id").value(10L)
                 )
-
                 .andExpect(
                         jsonPath("$.locationName")
-                                .value(
-                                        "Ironshield Prime"
-                                )
+                                .value("Ironshield Prime")
                 )
-
                 .andExpect(
                         jsonPath("$.locationType")
                                 .value("DISTRICT")
@@ -510,43 +449,12 @@ class LocationControllerTest {
 
 
     @Test
-    void updateLocation_shouldReturn404_whenLocationDoesNotExist()
-            throws Exception {
+    void updateLocation_shouldReturn404_whenLocationDoesNotExist() throws Exception {
+        UpdateLocationDto dto = new UpdateLocationDto("Updated", LocationType.CITY, "Updated description");
+        when(locationService.updateLocation(eq(99L), any(UpdateLocationDto.class))).thenThrow(new LocationNotFound(99L));
+        mockMvc.perform(put("/locations/99").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isNotFound());
 
-        UpdateLocationDto dto =
-                new UpdateLocationDto(
-                        "Updated",
-                        LocationType.CITY,
-                        "Updated description"
-                );
-
-        when(
-                locationService.updateLocation(
-                        eq(99L),
-                        any(UpdateLocationDto.class)
-                )
-        )
-                .thenThrow(
-                        new LocationNotFound(99L)
-                );
-
-        mockMvc.perform(
-                        put("/locations/99")
-                                .contentType(
-                                        "application/json"
-                                )
-                                .content(
-                                        objectMapper
-                                                .writeValueAsString(dto)
-                                )
-                )
-                .andExpect(status().isNotFound());
-
-        verify(locationService)
-                .updateLocation(
-                        eq(99L),
-                        any(UpdateLocationDto.class)
-                );
+        verify(locationService).updateLocation(eq(99L), any(UpdateLocationDto.class));
     }
 
 
@@ -555,39 +463,18 @@ class LocationControllerTest {
     // =========================================================
 
     @Test
-    void deleteLocation_shouldReturn200_whenLocationExists()
-            throws Exception {
-
-        doNothing()
-                .when(locationService)
-                .deleteLocation(10L);
-
-        mockMvc.perform(
-                        delete("/locations/10")
-                )
-                .andExpect(status().isOk());
-
-        verify(locationService)
-                .deleteLocation(10L);
+    void deleteLocation_shouldReturn200_whenLocationExists() throws Exception {
+        doNothing().when(locationService).deleteLocation(10L);
+        mockMvc.perform(delete("/locations/10").with(csrf())).andExpect(status().isOk());
+        verify(locationService).deleteLocation(10L);
     }
-
 
     @Test
-    void deleteLocation_shouldReturn404_whenLocationDoesNotExist()
-            throws Exception {
-
-        doThrow(
-                new LocationNotFound(99L)
-        )
-                .when(locationService)
-                .deleteLocation(99L);
-
-        mockMvc.perform(
-                        delete("/locations/99")
-                )
-                .andExpect(status().isNotFound());
-
-        verify(locationService)
-                .deleteLocation(99L);
+    void deleteLocation_shouldReturn404_whenLocationDoesNotExist() throws Exception {
+        doThrow(new LocationNotFound(99L)).when(locationService).deleteLocation(99L);
+        mockMvc.perform(delete("/locations/99").with(csrf())).andExpect(status().isNotFound());
+        verify(locationService).deleteLocation(99L);
     }
+
+
 }

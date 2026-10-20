@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,6 +25,7 @@ import tools.jackson.databind.ObjectMapper;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -42,6 +44,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private IEmailVerificationTokenService tokenService;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
 
     private UserResponseDto testUserResponse;
@@ -62,11 +67,7 @@ class AuthControllerTest {
     void register_shouldReturn200_whenRequestIsValid()
             throws Exception {
 
-        CreateUserDto dto =
-                new CreateUserDto(
-                        "test_user",
-                        "test@archivum.local",
-                        "password123"
+        CreateUserDto dto = new CreateUserDto("test_user", "test@archivum.local", "password123"
                 );
 
         when(
@@ -77,35 +78,10 @@ class AuthControllerTest {
                 .thenReturn(testUserResponse);
 
 
-        mockMvc.perform(
-                        post("/auth/register")
-                                .contentType("application/json")
-                                .content(
-                                        objectMapper.writeValueAsString(dto)
-                                )
-                )
-                .andExpect(status().isOk())
-
-                .andExpect(
-                        jsonPath("$.userName")
-                                .value("test_user")
-                )
-
-                .andExpect(
-                        jsonPath("$.email")
-                                .value("test@archivum.local")
-                )
-
-                .andExpect(
-                        jsonPath("$.userHashedPassword")
-                                .doesNotExist()
-                );
-
-
-        verify(userService)
-                .createUser(
-                        any(CreateUserDto.class)
-                );
+        mockMvc.perform(post("/auth/register").with(csrf())
+                .contentType("application/json").content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.userName").value("test_user")).andExpect(jsonPath("$.email").value("test@archivum.local")).andExpect(jsonPath("$.userHashedPassword").doesNotExist());
+        verify(userService).createUser(any(CreateUserDto.class));
     }
 
 
@@ -113,29 +89,15 @@ class AuthControllerTest {
     void register_shouldAllowAnonymousUser()
             throws Exception {
 
-        CreateUserDto dto =
-                new CreateUserDto(
+        CreateUserDto dto =new CreateUserDto(
                         "test_user",
                         "test@archivum.local",
                         "password123"
                 );
 
-        when(
-                userService.createUser(
-                        any(CreateUserDto.class)
-                )
-        )
-                .thenReturn(testUserResponse);
+        when(userService.createUser(any(CreateUserDto.class))).thenReturn(testUserResponse);
 
-
-        mockMvc.perform(
-                        post("/auth/register")
-                                .contentType("application/json")
-                                .content(
-                                        objectMapper.writeValueAsString(dto)
-                                )
-                )
-                .andExpect(status().isOk());
+        mockMvc.perform(post("/auth/register").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isOk());
 
 
         verify(userService)
@@ -149,39 +111,15 @@ class AuthControllerTest {
     void register_shouldReturnConflict_whenEmailAlreadyExists()
             throws Exception {
 
-        CreateUserDto dto =
-                new CreateUserDto(
-                        "test_user",
-                        "test@archivum.local",
-                        "password123"
-                );
-
-        when(
-                userService.createUser(
-                        any(CreateUserDto.class)
-                )
-        )
-                .thenThrow(
-                        new EmailAlreadyUsed(
-                                "This email is used"
-                        )
-                );
+        CreateUserDto dto = new CreateUserDto("test_user", "test@archivum.local", "password123");
+        when(userService.createUser(any(CreateUserDto.class)))
+                .thenThrow(new EmailAlreadyUsed("This email is used"));
 
 
-        mockMvc.perform(
-                        post("/auth/register")
-                                .contentType("application/json")
-                                .content(
-                                        objectMapper.writeValueAsString(dto)
-                                )
-                )
-                .andExpect(status().isConflict());
+        mockMvc.perform(post("/auth/register").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isConflict());
 
 
-        verify(userService)
-                .createUser(
-                        any(CreateUserDto.class)
-                );
+        verify(userService).createUser(any(CreateUserDto.class));
     }
 
 
@@ -189,27 +127,13 @@ class AuthControllerTest {
     void register_shouldReturnConflict_whenUsernameAlreadyExists()
             throws Exception {
 
-        CreateUserDto dto =
-                new CreateUserDto(
-                        "test_user",
-                        "test@archivum.local",
-                        "password123"
-                );
+        CreateUserDto dto = new CreateUserDto("test_user", "test@archivum.local", "password123");
 
-        when(
-                userService.createUser(
-                        any(CreateUserDto.class)
-                )
-        )
-                .thenThrow(
-                        new UsernameAlreadyUsed(
-                                "Username is already used"
-                        )
-                );
+        when(userService.createUser(any(CreateUserDto.class))).thenThrow(new UsernameAlreadyUsed("Username is already used"));
 
 
         mockMvc.perform(
-                        post("/auth/register")
+                        post("/auth/register").with(csrf())
                                 .contentType("application/json")
                                 .content(
                                         objectMapper.writeValueAsString(dto)
@@ -225,7 +149,7 @@ class AuthControllerTest {
     }
     @Test
     void verificationEmail_shouldReturn2OOok() throws Exception {
-        mockMvc.perform(post("/auth/verify-email").contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(post("/auth/verify-email").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
                     {
                         "token": "example-raw-token"
                     }""")).andExpect(status().isOk());
@@ -238,7 +162,7 @@ class AuthControllerTest {
 
         doThrow(new EmailVerificationTokenExpired()).when(tokenService).verifyEmail("example-raw-token");
 
-        mockMvc.perform(post("/auth/verify-email").contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(post("/auth/verify-email").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
                     {
                         "token": "example-raw-token"
                         

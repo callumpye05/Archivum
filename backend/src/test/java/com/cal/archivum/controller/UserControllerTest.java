@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -21,6 +22,7 @@ import tools.jackson.databind.ObjectMapper;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -38,6 +40,9 @@ class UserControllerTest {
 
     @MockitoBean
     private IUserService userService;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
     private UserResponseDto testUserResponse;
 
@@ -57,41 +62,20 @@ class UserControllerTest {
     // SECURITY
     // =========================================================
 
+
     @Test
     @WithAnonymousUser
-    void updateUser_shouldReturn401_whenUserIsNotAuthenticated()
-            throws Exception {
-
-        UpdateUserDto dto =
-                new UpdateUserDto(
-                        "updated_user",
-                        "updated@archivum.local",
-                        "newPassword"
-                );
-
-        mockMvc.perform(
-                        put("/users/me")
-                                .contentType("application/json")
-                                .content(
-                                        objectMapper.writeValueAsString(dto)
-                                )
-                )
-                .andExpect(status().isUnauthorized());
+    void updateUser_shouldReturn401_whenUserIsNotAuthenticated() throws Exception {
+        UpdateUserDto dto= new UpdateUserDto("updated_user", "updated@archivum.local", "newPassword");
+        mockMvc.perform(put("/users/me").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isUnauthorized());
 
         verifyNoInteractions(userService);
     }
 
-
     @Test
     @WithAnonymousUser
-    void deleteUser_shouldReturn401_whenUserIsNotAuthenticated()
-            throws Exception {
-
-        mockMvc.perform(
-                        delete("/users/me")
-                )
-                .andExpect(status().isUnauthorized());
-
+    void deleteUser_shouldReturn401_whenUserIsNotAuthenticated() throws Exception {
+        mockMvc.perform(delete("/users/me").with(csrf())).andExpect(status().isUnauthorized());
         verifyNoInteractions(userService);
     }
 
@@ -100,58 +84,14 @@ class UserControllerTest {
     // UPDATE USER
     // =========================================================
 
+
     @Test
-    void updateUser_shouldReturn200_whenRequestIsValid()
-            throws Exception {
-
-        UpdateUserDto dto =
-                new UpdateUserDto(
-                        "updated_user",
-                        "updated@archivum.local",
-                        "newPassword"
-                );
-
-        UserResponseDto updatedUser =
-                new UserResponseDto(
-                        "updated_user",
-                        "updated@archivum.local"
-                );
-
-        when(
-                userService.updateUser(
-                        any(UpdateUserDto.class)
-                )
-        )
-                .thenReturn(updatedUser);
-
-        mockMvc.perform(
-                        put("/users/me")
-                                .contentType("application/json")
-                                .content(
-                                        objectMapper.writeValueAsString(dto)
-                                )
-                )
-                .andExpect(status().isOk())
-
-                .andExpect(
-                        jsonPath("$.userName")
-                                .value("updated_user")
-                )
-
-                .andExpect(
-                        jsonPath("$.email")
-                                .value("updated@archivum.local")
-                )
-
-                .andExpect(
-                        jsonPath("$.userHashedPassword")
-                                .doesNotExist()
-                );
-
-        verify(userService)
-                .updateUser(
-                        any(UpdateUserDto.class)
-                );
+    void updateUser_shouldReturn200_whenRequestIsValid() throws Exception {
+        UpdateUserDto dto= new UpdateUserDto("updated_user", "updated@archivum.local", "newPassword");
+        UserResponseDto updatedUser = new UserResponseDto("updated_user", "updated@archivum.local");
+        when(userService.updateUser(any(UpdateUserDto.class))).thenReturn(updatedUser);
+        mockMvc.perform(put("/users/me").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isOk()).andExpect(jsonPath("$.userName").value("updated_user")).andExpect(jsonPath("$.email").value("updated@archivum.local")).andExpect(jsonPath("$.userHashedPassword").doesNotExist());
+        verify(userService).updateUser(any(UpdateUserDto.class));
     }
 
 
@@ -160,21 +100,12 @@ class UserControllerTest {
     // =========================================================
 
     @Test
-    void deleteUser_shouldReturn200_whenUserIsAuthenticated()
-            throws Exception {
-
-        doNothing()
-                .when(userService)
-                .deleteUser();
-
-        mockMvc.perform(
-                        delete("/users/me")
-                )
-                .andExpect(status().isOk());
-
-        verify(userService)
-                .deleteUser();
+    void deleteUser_shouldReturn200_whenUserIsAuthenticated() throws Exception {
+        doNothing().when(userService).deleteUser();
+        mockMvc.perform(delete("/users/me").with(csrf())).andExpect(status().isOk());
+        verify(userService).deleteUser();
     }
+
 
     // =========================================================
     // GET USER
