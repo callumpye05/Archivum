@@ -2,7 +2,9 @@
 
 Archivum is a personal backend-oriented worldbuilding and knowledge-management application built around structured fictional worlds, characters, locations, and their relationships.
 
-Although Archivum includes a React frontend, I primarily use the project as a platform for learning and applying backend engineering, software architecture, security, DevOps, and eventually DataOps concepts.
+Although Archivum includes a React frontend, most of it isn't done by me, since the focus is backend. However, in future I plan to shfit from a React frontend to my own persoanlly built Angular frontend, once I have the level tgo do so.  
+
+I primarily use the project as a platform for learning and applying backend engineering, software architecture, security, DevOps, and eventually DataOps concepts.
 
 The objective is not simply to build another CRUD application. Archivum is intended to evolve into a larger system in which I can experiment with authentication, data integrity, migrations, deployment, observability, asynchronous processing, search, data pipelines, and distributed infrastructure while maintaining a usable application around them.
 
@@ -10,9 +12,9 @@ I'm doing this project during my studies, hence why i'm focusing my time onto as
 
 ## Project Focus
 
-Archivum is deliberately backend-first.
+Archivum is deliberately backend-first. 
 
-The frontend exists to provide a practical interface to the system, but most of the engineering focus is placed on the behavior and architecture behind it that I've designed. 
+The frontend exists to provide a practical interface to the system, but most of the engineering focus is placed on the behavior and architecture behind it that I'm largley designing by hand, with notions learnt in univeristy, but also on Udemy. 
 
 Current areas of focus include:
 
@@ -45,6 +47,7 @@ The backend currently manages:
 
 - user registration
 - authenticated access
+- session management 
 - world ownership
 - characters and locations scoped to worlds
 - prevention of cross-user resource access
@@ -76,9 +79,9 @@ more production-oriented backend, DevOps, and DataOps concerns.
 
 Planned work includes:
 
-- email verification
-- password reset
-- a proper authentication lifecycle replacing the current HTTP Basic implementation
+- email verification (DONE)
+- password reset 
+- a proper authentication lifecycle replacing the current HTTP Basic implementation (DONE)
 - richer account management
 - stronger API error handling
 - further validation and domain constraints
@@ -162,4 +165,8 @@ it also works hand in hand with my courses, reinforcing what I'm learning, as ri
 As of October 2026 , my focus has been on email verification for new users. Essentially I've learnt to manipulate mailpit and spring mail. For the time being, I'm going to skip
 the front end aspect of a verification page, simply because I intend on redoing the front end myself, once my frontend skills catch up to my backend skills. Most of what I plan for the rest of
 October is the following : re-enable CSRF, implement GET/users/me , conduct research on Flyway in order for data migrations ( though much later as theory is needed) and finally a CI with Github Actions.
-As I continue, I will still dedicate time to doing smaller tasks, but these are the main tasks I'm setting for myself. 
+As I continue, I will still dedicate time to doing smaller tasks, but these are the main tasks I'm setting for myself.
+
+UPDATE : Session management is largely complete for now. It took longer than expected because the learning curve is steeper. Integration tests are still required. My next objective is to focus on fixing Exception handling and annotations within the different parts of the backend.
+I noticed through Madan Reddy's course, that my handling is quite weak and underdeveloped, and since system reliability is crucial, it seems like a neccessary step to take. 
+

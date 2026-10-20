@@ -231,6 +231,37 @@ class UserServiceTest {
                 .findByUserName("missing_user");
     }
 
+    @Test
+    void getCurrentUserInDtoFormat_shouldReturnUserResponseDto_whenUserExists() {
+
+        authenticateAs("test_user");
+
+        when(userRepo.findByUserName("test_user")).thenReturn(Optional.of(testUser));
+
+
+        UserResponseDto result = userService.getCurrentUserInDtoFormat();
+
+
+        assertEquals(testUser.getEmail(), result.email());
+        assertEquals("test_user", result.userName());
+        verify(userRepo).findByUserName("test_user");
+    }
+
+    @Test
+    void getCurrentUserInDtoFormat_shouldThrow_whenAuthenticatedUserDoesNotExist() {
+
+        authenticateAs("missing_user");
+
+        when(userRepo.findByUserName("missing_user")).thenReturn(Optional.empty());
+        assertThrows(UserNotFoundByEmailOrUsername.class, () -> userService.getCurrentUser());
+        verify(userRepo).findByUserName("missing_user");
+    }
+
+
+
+
+
+
 
     // =========================================================
     // UPDATE USER

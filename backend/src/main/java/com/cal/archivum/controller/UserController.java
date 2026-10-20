@@ -6,6 +6,7 @@ import com.cal.archivum.dto.impl.UserResponseDto;
 import com.cal.archivum.entity.User;
 import com.cal.archivum.service.IUserService;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,5 +27,10 @@ public class UserController {
     @DeleteMapping("/me")
     public void deleteUser() {
          userService.deleteUser();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDto> getMe() {
+        return ResponseEntity.ok(userService.getCurrentUserInDtoFormat());
     }
  }

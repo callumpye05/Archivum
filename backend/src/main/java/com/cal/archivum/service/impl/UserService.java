@@ -81,6 +81,14 @@ public class UserService implements IUserService {
                         new UserNotFoundByEmailOrUsername(userName));
     }
 
+    @Override
+    public UserResponseDto getCurrentUserInDtoFormat() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userName = authentication.getName();
+        User user =  userRepo.findByUserName(userName).orElseThrow(() -> new UserNotFoundByEmailOrUsername(userName));
+        return toUserResponse(user);
+    }
+
 
     private User fromCreateDto(CreateUserDto dto) {
         if (userRepo.existsByEmail(dto.email())) {

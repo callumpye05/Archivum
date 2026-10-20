@@ -12,4 +12,5 @@ public interface IUserService {
     UserResponseDto updateUser(UpdateUserDto UpdateUser);
     void deleteUser();
     User getCurrentUser();
+    UserResponseDto getCurrentUserInDtoFormat();
 }

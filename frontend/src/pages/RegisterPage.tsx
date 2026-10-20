@@ -55,7 +55,9 @@ export function RegisterPage() {
       {registered ? (
         <>
           <p className="notice" role="status">
-            Account created successfully.
+            Account created successfully. A verification email has been sent.
+            Open the link in your email to verify your account. The link expires
+            in one hour.
           </p>
           <button
             type="button"
@@ -81,6 +83,7 @@ export function RegisterPage() {
                   id="userName"
                   name="userName"
                   autoComplete="username"
+                  maxLength={100}
                   required
                 />
               </label>
@@ -91,6 +94,7 @@ export function RegisterPage() {
                   name="email"
                   type="email"
                   autoComplete="email"
+                  maxLength={254}
                   required
                 />
               </label>
@@ -102,6 +106,8 @@ export function RegisterPage() {
                   name="password"
                   type="password"
                   autoComplete="new-password"
+                  minLength={8}
+                  maxLength={100}
                   required
                   aria-describedby="password-note"
                 />

@@ -19,6 +19,15 @@ afterEach(async () => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
+function stubFetch(respond: ReturnType<typeof vi.fn>) {
+  vi.stubGlobal("fetch", (path: string, options: RequestInit) =>
+    path === "/api/auth/csrf"
+      ? Promise.resolve(
+          Response.json({ headerName: "X-CSRF-TOKEN", token: "test-csrf" }),
+        )
+      : respond(path, options),
+  );
+}
 function field(name: string) {
   return host.querySelector<HTMLInputElement>(`[name="${name}"]`)!;
 }
@@ -45,7 +54,7 @@ it("sends the exact registration contract and stays on a success state with a lo
       { status: 201 },
     ),
   );
-  vi.stubGlobal("fetch", fetch);
+  stubFetch(fetch);
   const store = vi.spyOn(Storage.prototype, "setItem");
   fill();
   const password = field("password");
@@ -56,7 +65,7 @@ it("sends the exact registration contract and stays on a success state with a lo
       method: "POST",
       headers: {
         Accept: "application/json",
-        "X-Requested-With": "XMLHttpRequest",
+        "X-CSRF-TOKEN": "test-csrf",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -66,8 +75,8 @@ it("sends the exact registration contract and stays on a success state with a lo
       }),
     }),
   );
-  expect(host.querySelector('[role="status"]')?.textContent).toBe(
-    "Account created successfully.",
+  expect(host.querySelector('[role="status"]')?.textContent).toContain(
+    "A verification email has been sent.",
   );
   expect(host.querySelector("form")).toBeNull();
   expect(host.querySelector('button[type="button"]')?.textContent).toContain(
@@ -86,7 +95,7 @@ it.each(["empty", "blank username", "invalid email"])(
   "blocks %s input without a request",
   async (scenario) => {
     const fetch = vi.fn();
-    vi.stubGlobal("fetch", fetch);
+    stubFetch(fetch);
     if (scenario !== "empty") fill();
     if (scenario === "blank username") field("userName").value = "   ";
     if (scenario === "invalid email") field("email").value = "not-an-email";
@@ -103,7 +112,7 @@ it("clears the password immediately, disables fields, and prevents duplicate in-
         finish = resolve;
       }),
   );
-  vi.stubGlobal("fetch", fetch);
+  stubFetch(fetch);
   fill();
   await submit();
   expect(field("password").value).toBe("");
@@ -144,7 +153,7 @@ it.each([
           '{"userName":"Archivist","email":"archivist@example.com"}',
         ),
       );
-    vi.stubGlobal("fetch", fetch);
+    stubFetch(fetch);
     fill();
     await submit();
     expect(host.querySelector('[role="alert"]')?.textContent).toContain(

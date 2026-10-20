@@ -1,4 +1,6 @@
 HELP.md
+backend/.env
+backend/compose.yml.backup
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

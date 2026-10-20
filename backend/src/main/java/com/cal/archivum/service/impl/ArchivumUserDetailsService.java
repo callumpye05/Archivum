@@ -28,7 +28,7 @@ public class ArchivumUserDetailsService implements UserDetailsService {
 
         User user = userRepository
                 .findByUserNameOrEmail(identifier, identifier).orElseThrow(() -> new UserNotFoundByEmailOrUsername(identifier));
-        return org.springframework.security.core.userdetails.User.withUsername(user.getUserName()).password(user.getUserHashedPassword()).roles("USER").build();
+        return org.springframework.security.core.userdetails.User.withUsername(user.getUserName()).password(user.getUserHashedPassword()).disabled(!user.isVerifiedUser()).roles("USER").build();
     }
 
 }

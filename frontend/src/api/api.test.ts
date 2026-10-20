@@ -1,18 +1,25 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as api from "./index";
-import { clearAuthorization, onUnauthorized, request, signIn } from "./client";
+import { request } from "./client";
 
 afterEach(() => {
-  clearAuthorization();
   vi.unstubAllGlobals();
 });
+function stubFetch(respond: ReturnType<typeof vi.fn>) {
+  vi.stubGlobal("fetch", (path: string, options: RequestInit) =>
+    path === "/api/auth/csrf"
+      ? Promise.resolve(
+          Response.json({ headerName: "X-CSRF-TOKEN", token: "test-csrf" }),
+        )
+      : respond(path, options),
+  );
+}
 describe("API contract", () => {
   it.each([200, 201, 202, 204, 205, 206, 299])(
-    "accepts an empty %i world DELETE with Basic auth and no child requests",
+    "accepts an empty %i world DELETE with session cookies and CSRF and no child requests",
     async (status) => {
-      const fetch = vi.fn().mockResolvedValueOnce(new Response("[]"));
-      vi.stubGlobal("fetch", fetch);
-      await signIn("Archivist", "test-password");
+      const fetch = vi.fn();
+      stubFetch(fetch);
       fetch.mockClear();
       const response = new Response(null, { status });
       const parseJson = vi.spyOn(response, "json");
@@ -24,9 +31,9 @@ describe("API contract", () => {
         expect.objectContaining({
           method: "DELETE",
           body: undefined,
-          credentials: "omit",
+          credentials: "include",
           headers: expect.objectContaining({
-            Authorization: `Basic ${btoa("Archivist:test-password")}`,
+            "X-CSRF-TOKEN": "test-csrf",
           }),
         }),
       );
@@ -36,7 +43,7 @@ describe("API contract", () => {
     "rejects a world DELETE with HTTP %i without issuing child requests",
     async (status) => {
       const fetch = vi.fn().mockResolvedValue(new Response(null, { status }));
-      vi.stubGlobal("fetch", fetch);
+      stubFetch(fetch);
       await expect(api.deleteWorld(7)).rejects.toMatchObject({
         name: "ApiError",
         status,
@@ -72,7 +79,7 @@ describe("API contract", () => {
     ],
   ] as const)("reads %s from the existing route", async (_name, call, path) => {
     const fetch = vi.fn().mockResolvedValue(new Response("[]"));
-    vi.stubGlobal("fetch", fetch);
+    stubFetch(fetch);
     await call();
     expect(fetch).toHaveBeenCalledWith(
       `/api${path}`,
@@ -88,7 +95,7 @@ describe("API contract", () => {
     const fetch = vi
       .fn()
       .mockImplementation(() => Promise.resolve(new Response("{}")));
-    vi.stubGlobal("fetch", fetch);
+    stubFetch(fetch);
     await api.createLocation(7, dto);
     await api.updateLocation(2, dto);
     expect(fetch).toHaveBeenNthCalledWith(
@@ -106,7 +113,7 @@ describe("API contract", () => {
     const fetch = vi
       .fn()
       .mockImplementation(() => Promise.resolve(new Response("{}")));
-    vi.stubGlobal("fetch", fetch);
+    stubFetch(fetch);
     await api.createWorld({ worldName: "Test", worldDesc: "" });
     await api.updateWorld(7, { worldDesc: "" });
     expect(fetch).toHaveBeenNthCalledWith(
@@ -131,7 +138,7 @@ describe("API contract", () => {
         .mockImplementation(() =>
           Promise.resolve(new Response(null, { status })),
         );
-      vi.stubGlobal("fetch", fetch);
+      stubFetch(fetch);
       await expect(api.deleteWorld(7)).resolves.toBeUndefined();
       await expect(api.deleteCharacter(3)).resolves.toBeUndefined();
       await expect(api.deleteLocation(2)).resolves.toBeUndefined();
@@ -146,8 +153,7 @@ describe("API contract", () => {
     },
   );
   it("shows Spring plain-text not-found responses", async () => {
-    vi.stubGlobal(
-      "fetch",
+    stubFetch(
       vi
         .fn()
         .mockResolvedValue(
@@ -178,109 +184,10 @@ describe("API contract", () => {
   });
   it("reports a world deletion failure without deleting children", async () => {
     const fetch = vi.fn().mockResolvedValue(new Response("", { status: 500 }));
-    vi.stubGlobal("fetch", fetch);
+    stubFetch(fetch);
     await expect(api.deleteWorld(7)).rejects.toThrow(
       "Unable to delete this entry",
     );
     expect(fetch).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("account credential lifecycle", () => {
-  it.each([
-    [{ email: "new@example.com" }, "Archivist:password"],
-    [{ password: "new-password" }, "Archivist:new-password"],
-    [{ userName: "Renamed" }, "Renamed:password"],
-  ] as const)(
-    "applies partial account changes with the existing credential before rotating it",
-    async (dto, expected) => {
-      const fetch = vi.fn(async () => new Response("{}"));
-      vi.stubGlobal("fetch", fetch);
-      await signIn("Archivist", "password");
-      await api.updateUser(dto);
-      await api.getWorlds();
-      expect(fetch).toHaveBeenNthCalledWith(
-        2,
-        "/api/users/me",
-        expect.objectContaining({
-          method: "PUT",
-          body: JSON.stringify(dto),
-          credentials: "omit",
-          headers: expect.objectContaining({
-            Authorization: "Basic " + btoa("Archivist:password"),
-          }),
-        }),
-      );
-      expect(fetch).toHaveBeenNthCalledWith(
-        3,
-        "/api/worlds",
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            Authorization: "Basic " + btoa(expected),
-          }),
-        }),
-      );
-    },
-  );
-  it("cannot restore credentials from an account response arriving after sign out", async () => {
-    let finish!: (response: Response) => void;
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn()
-        .mockResolvedValueOnce(new Response("[]"))
-        .mockImplementationOnce(
-          () =>
-            new Promise<Response>((resolve) => {
-              finish = resolve;
-            }),
-        )
-        .mockImplementation(async () => new Response("[]")),
-    );
-    await signIn("Archivist", "password");
-    const pending = api.updateUser({ userName: "Renamed" });
-    clearAuthorization();
-    finish(new Response("{}"));
-    await expect(pending).rejects.toThrow("Your sign-in changed");
-    await api.getWorlds();
-    expect(
-      new Headers(vi.mocked(fetch).mock.calls.at(-1)![1]?.headers).has(
-        "Authorization",
-      ),
-    ).toBe(false);
-  });
-  it("ignores a stale 401 from before an account update even when the credential text is unchanged", async () => {
-    let finish!: (response: Response) => void;
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn()
-        .mockResolvedValueOnce(new Response("[]"))
-        .mockImplementationOnce(
-          () =>
-            new Promise<Response>((resolve) => {
-              finish = resolve;
-            }),
-        )
-        .mockImplementation(async () => new Response("{}")),
-    );
-    const unauthorized = vi.fn();
-    const unsubscribe = onUnauthorized(unauthorized);
-    try {
-      await signIn("Archivist", "password");
-      const stale = api.getWorlds();
-      await api.updateUser({ email: "new@example.com" });
-      finish(new Response("Unauthorized", { status: 401 }));
-      await expect(stale).rejects.toThrow("Unauthorized");
-      expect(unauthorized).not.toHaveBeenCalled();
-      await api.getWorlds();
-      expect(
-        new Headers(vi.mocked(fetch).mock.calls.at(-1)![1]?.headers).get(
-          "Authorization",
-        ),
-      ).toBe("Basic " + btoa("Archivist:password"));
-    } finally {
-      unsubscribe();
-    }
   });
 });

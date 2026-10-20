@@ -8,11 +8,15 @@ export function AccountSettings({
   onSave,
   onClose,
   onSignOut,
+  signingOut = false,
+  signOutError = "",
 }: {
   username: string;
   onSave: (data: UpdateUserDto) => Promise<void>;
   onClose: () => void;
   onSignOut: () => void;
+  signingOut?: boolean;
+  signOutError?: string;
 }) {
   const submitting = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -95,8 +99,6 @@ export function AccountSettings({
               defaultValue={username}
               required
               maxLength={100}
-              pattern="[^:]+"
-              title="Enter your username without a colon."
               autoComplete="username"
             />
           </label>
@@ -134,7 +136,8 @@ export function AccountSettings({
           </label>
         </fieldset>
         <p className="form-note">
-          Leave new email and password blank to keep them unchanged. Your
+          Changing your username signs you out so you can log in with the new
+          name. Leave new email and password blank to keep them unchanged. Your
           current email is not available here.
         </p>
         {error && (
@@ -150,8 +153,13 @@ export function AccountSettings({
         </div>
       </form>
       <div className="account-signout">
-        <button type="button" onClick={onSignOut}>
-          Sign out
+        {signOutError && (
+          <p className="inline-error" role="alert">
+            {signOutError}
+          </p>
+        )}
+        <button type="button" onClick={onSignOut} disabled={busy || signingOut}>
+          {signingOut ? "Signing out…" : "Sign out"}
         </button>
       </div>
     </Modal>

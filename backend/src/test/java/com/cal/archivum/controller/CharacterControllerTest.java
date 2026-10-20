@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -29,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -48,6 +50,9 @@ class CharacterControllerTest {
 
     @MockitoBean
     private ICharacterService characterService;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
     private World testWorld;
     private WorldCharacter testCharacter;
@@ -85,10 +90,7 @@ class CharacterControllerTest {
     void getCharacter_shouldReturn401_whenUserIsNotAuthenticated()
             throws Exception {
 
-        mockMvc.perform(
-                        get("/characters/10")
-                )
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/characters/10").with(csrf())).andExpect(status().isUnauthorized());
 
         verifyNoInteractions(characterService);
     }
@@ -353,7 +355,7 @@ class CharacterControllerTest {
                 .thenReturn(testCharacter);
 
         mockMvc.perform(
-                        post("/worlds/2/characters")
+                        post("/worlds/2/characters").with(csrf())
                                 .contentType(
                                         "application/json"
                                 )
@@ -416,7 +418,7 @@ class CharacterControllerTest {
                 );
 
         mockMvc.perform(
-                        post("/worlds/99/characters")
+                        post("/worlds/99/characters").with(csrf())
                                 .contentType(
                                         "application/json"
                                 )
@@ -478,7 +480,7 @@ class CharacterControllerTest {
                 .thenReturn(updated);
 
         mockMvc.perform(
-                        put("/characters/10")
+                        put("/characters/10").with(csrf())
                                 .contentType(
                                         "application/json"
                                 )
@@ -550,7 +552,7 @@ class CharacterControllerTest {
                 );
 
         mockMvc.perform(
-                        put("/characters/99")
+                        put("/characters/99").with(csrf())
                                 .contentType(
                                         "application/json"
                                 )
@@ -582,7 +584,7 @@ class CharacterControllerTest {
                 .deleteCharacter(10L);
 
         mockMvc.perform(
-                        delete("/characters/10")
+                        delete("/characters/10").with(csrf())
                 )
                 .andExpect(status().isOk());
 
@@ -602,7 +604,7 @@ class CharacterControllerTest {
                 .deleteCharacter(99L);
 
         mockMvc.perform(
-                        delete("/characters/99")
+                        delete("/characters/99").with(csrf())
                 )
                 .andExpect(status().isNotFound());
 

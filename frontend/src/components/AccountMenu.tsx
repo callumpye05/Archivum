@@ -7,10 +7,14 @@ export function AccountMenu({
   username,
   onSave,
   onSignOut,
+  signingOut = false,
+  signOutError = "",
 }: {
   username: string;
   onSave: (data: UpdateUserDto) => Promise<void>;
   onSignOut: () => void;
+  signingOut?: boolean;
+  signOutError?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [account, setAccount] = useState(false);
@@ -81,8 +85,8 @@ export function AccountMenu({
           >
             Account
           </button>
-          <button type="button" onClick={onSignOut}>
-            Sign out
+          <button type="button" onClick={onSignOut} disabled={signingOut}>
+            {signingOut ? "Signing out…" : "Sign out"}
           </button>
         </div>
       )}
@@ -92,6 +96,8 @@ export function AccountMenu({
           onSave={onSave}
           onClose={closeAccount}
           onSignOut={onSignOut}
+          signingOut={signingOut}
+          signOutError={signOutError}
         />
       )}
     </div>
