@@ -7,9 +7,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.mysql.MySQLContainer;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -17,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional //for now until having an isolated test environment....
+@Testcontainers
 class AuthenticationIntegrationTests {
 
     @Autowired
@@ -28,6 +32,10 @@ class AuthenticationIntegrationTests {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Container
+    @ServiceConnection
+    static MySQLContainer mysql =new MySQLContainer("mysql:8.4");
 
     @Test
     void verified_user_can_login() throws Exception {
