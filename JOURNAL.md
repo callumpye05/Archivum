@@ -23,3 +23,8 @@ For the time being, the existing tests will serve as a temporary solution. Howev
 
 I researched the importance of Automatic testing in CI/CD through the documentation of Testcontainers. Then I integrated it and shifted ( earlier than expected) from @Transactional to 
 the new isolated test environment. 
+
+
+Later in the day I came back because the tests weren't working due to duplicate entries. For now I decided to give each test in security its own dedicated user. As of now this works, because there are few tests
+but in future it'll be best to shift towards a shared instance Testcontainer with usable data already inside.
+Additionally  I refactored all NON READ controller tests to check for csrf. This marks the end of the CSRF and session implementation.  

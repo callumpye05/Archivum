@@ -1,22 +1,22 @@
 # Archivum TODO
 
-## Now
--  (DONE) Finish resource ownership integration tests (currently done with world but need to do character and location)
-- (DONE) CASCADE DELETION and updated front end. 
-- (DONE) Email Verification on backend
-
-## Probably next
+## DONE
+-   Finish resource ownership integration tests (currently done with world but need to do character and location)
+-  CASCADE DELETION and updated front end.
+-  Email Verification on backend
 -  GET /users/me and corresponding tests
 -  fix user refreshing page and getting signed out
 -  fix CSRF being disabled
 
-## Later
-- Exception handler is too vague it doesn't specify what request is being invoked
-- Add backend validations using jakarta annotations onto controller methods
-- GET /users/me
-- Replace HTTP Basic with a proper authentication lifecycle
-- Password reset
-- Flyway database migrations
-- Add isolated test environment MySQL test containers
 
-that sounds like a good start
+## Now
+- Upgrade error handling and additional annotations on methods weren't necessary
+
+## Probably next
+- Flyway migrations 
+- Github Actions tutorial to prepare for CI/CD 
+
+## Later
+- Password reset
+- New functionalities , was thinking of,relationships between characters and a graph representation of it. 
+
