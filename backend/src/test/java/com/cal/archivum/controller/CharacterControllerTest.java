@@ -71,12 +71,8 @@ class CharacterControllerTest {
         testCharacter.setCharacterName("Lucian Varek");
         testCharacter.setCharacterSpecies("Human");
         testCharacter.setAge(34);
-        testCharacter.setCharacterDescription(
-                "Test character"
-        );
-        testCharacter.setCharacterNationality(
-                "Eisenmarkian"
-        );
+        testCharacter.setCharacterDescription("Test character");
+        testCharacter.setCharacterNationality("Eisenmarkian");
         testCharacter.setWorld(testWorld);
     }
 
@@ -87,11 +83,8 @@ class CharacterControllerTest {
 
     @Test
     @WithAnonymousUser
-    void getCharacter_shouldReturn401_whenUserIsNotAuthenticated()
-            throws Exception {
-
+    void getCharacter_shouldReturn401_whenUserIsNotAuthenticated() throws Exception {
         mockMvc.perform(get("/characters/10").with(csrf())).andExpect(status().isUnauthorized());
-
         verifyNoInteractions(characterService);
     }
 
@@ -101,68 +94,17 @@ class CharacterControllerTest {
     // =========================================================
 
     @Test
-    void getCharacter_shouldReturn200_whenCharacterExists()
-            throws Exception {
-
-        when(characterService.getCharacter(10L))
-                .thenReturn(testCharacter);
-
-        mockMvc.perform(
-                        get("/characters/10")
-                )
-                .andExpect(status().isOk())
-
-                .andExpect(
-                        jsonPath("$.characterId")
-                                .value(10L)
-                )
-
-                .andExpect(
-                        jsonPath("$.characterName")
-                                .value("Lucian Varek")
-                )
-
-                .andExpect(
-                        jsonPath("$.characterSpecies")
-                                .value("Human")
-                )
-
-                .andExpect(
-                        jsonPath("$.age")
-                                .value(34)
-                )
-
-                .andExpect(
-                        jsonPath("$.characterDescription")
-                                .value("Test character")
-                )
-
-                .andExpect(
-                        jsonPath("$.characterNationality")
-                                .value("Eisenmarkian")
-                );
-
-        verify(characterService)
-                .getCharacter(10L);
+    void getCharacter_shouldReturn200_whenCharacterExists() throws Exception {
+        when(characterService.getCharacter(10L)).thenReturn(testCharacter);
+        mockMvc.perform(get("/characters/10")).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Varek")).andExpect(jsonPath("$.characterSpecies").value("Human")).andExpect(jsonPath("$.age").value(34)).andExpect(jsonPath("$.characterDescription").value("Test character")).andExpect(jsonPath("$.characterNationality").value("Eisenmarkian"));
+        verify(characterService).getCharacter(10L);
     }
 
-
     @Test
-    void getCharacter_shouldReturn404_whenCharacterDoesNotExist()
-            throws Exception {
-
-        when(characterService.getCharacter(99L))
-                .thenThrow(
-                        new CharacterNotFound(99L)
-                );
-
-        mockMvc.perform(
-                        get("/characters/99")
-                )
-                .andExpect(status().isNotFound());
-
-        verify(characterService)
-                .getCharacter(99L);
+    void getCharacter_shouldReturn404_whenCharacterDoesNotExist() throws Exception {
+        when(characterService.getCharacter(99L)).thenThrow(new CharacterNotFound(99L));
+        mockMvc.perform(get("/characters/99")).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/characters/99")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verify(characterService).getCharacter(99L);
     }
 
 
@@ -171,85 +113,24 @@ class CharacterControllerTest {
     // =========================================================
 
     @Test
-    void getAllCharactersFromWorld_shouldReturn200_whenWorldExists()
-            throws Exception {
-
-        when(
-                characterService
-                        .getAllCharactersFromWorld(2L)
-        )
-                .thenReturn(
-                        List.of(testCharacter)
-                );
-
-        mockMvc.perform(
-                        get("/worlds/2/characters")
-                )
-                .andExpect(status().isOk())
-
-                .andExpect(
-                        jsonPath("$.length()")
-                                .value(1)
-                )
-
-                .andExpect(
-                        jsonPath("$[0].characterId")
-                                .value(10L)
-                )
-
-                .andExpect(
-                        jsonPath("$[0].characterName")
-                                .value("Lucian Varek")
-                );
-
-        verify(characterService)
-                .getAllCharactersFromWorld(2L);
+    void getAllCharactersFromWorld_shouldReturn200_whenWorldExists() throws Exception {
+        when(characterService.getAllCharactersFromWorld(2L)).thenReturn(List.of(testCharacter));
+        mockMvc.perform(get("/worlds/2/characters")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].characterId").value(10L)).andExpect(jsonPath("$[0].characterName").value("Lucian Varek"));
+        verify(characterService).getAllCharactersFromWorld(2L);
     }
 
-
     @Test
-    void getAllCharactersFromWorld_shouldReturn200AndEmptyList_whenWorldHasNoCharacters()
-            throws Exception {
-
-        when(
-                characterService
-                        .getAllCharactersFromWorld(2L)
-        )
-                .thenReturn(List.of());
-
-        mockMvc.perform(
-                        get("/worlds/2/characters")
-                )
-                .andExpect(status().isOk())
-                .andExpect(
-                        jsonPath("$.length()")
-                                .value(0)
-                );
-
-        verify(characterService)
-                .getAllCharactersFromWorld(2L);
+    void getAllCharactersFromWorld_shouldReturn200AndEmptyList_whenWorldHasNoCharacters() throws Exception {
+        when(characterService.getAllCharactersFromWorld(2L)).thenReturn(List.of());
+        mockMvc.perform(get("/worlds/2/characters")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        verify(characterService).getAllCharactersFromWorld(2L);
     }
 
-
     @Test
-    void getAllCharactersFromWorld_shouldReturn404_whenWorldDoesNotExist()
-            throws Exception {
-
-        when(
-                characterService
-                        .getAllCharactersFromWorld(99L)
-        )
-                .thenThrow(
-                        new WorldNotFound(99L)
-                );
-
-        mockMvc.perform(
-                        get("/worlds/99/characters")
-                )
-                .andExpect(status().isNotFound());
-
-        verify(characterService)
-                .getAllCharactersFromWorld(99L);
+    void getAllCharactersFromWorld_shouldReturn404_whenWorldDoesNotExist() throws Exception {
+        when(characterService.getAllCharactersFromWorld(99L)).thenThrow(new WorldNotFound(99L));
+        mockMvc.perform(get("/worlds/99/characters")).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/99/characters")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verify(characterService).getAllCharactersFromWorld(99L);
     }
 
 
@@ -258,74 +139,17 @@ class CharacterControllerTest {
     // =========================================================
 
     @Test
-    void getCharacterByWorld_shouldReturn200_whenCharacterBelongsToWorld()
-            throws Exception {
-
-        when(
-                characterService
-                        .getCharacterByWorldId(
-                                2L,
-                                10L
-                        )
-        )
-                .thenReturn(testCharacter);
-
-        mockMvc.perform(
-                        get("/worlds/2/characters/10")
-                )
-                .andExpect(status().isOk())
-
-                .andExpect(
-                        jsonPath("$.characterId")
-                                .value(10L)
-                )
-
-                .andExpect(
-                        jsonPath("$.characterName")
-                                .value("Lucian Varek")
-                )
-
-                .andExpect(
-                        jsonPath("$.characterSpecies")
-                                .value("Human")
-                );
-
-        verify(characterService)
-                .getCharacterByWorldId(
-                        2L,
-                        10L
-                );
+    void getCharacterByWorld_shouldReturn200_whenCharacterBelongsToWorld() throws Exception {
+        when(characterService.getCharacterByWorldId(2L, 10L)).thenReturn(testCharacter);
+        mockMvc.perform(get("/worlds/2/characters/10")).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Varek")).andExpect(jsonPath("$.characterSpecies").value("Human"));
+        verify(characterService).getCharacterByWorldId(2L, 10L);
     }
 
-
     @Test
-    void getCharacterByWorld_shouldReturn404_whenCharacterDoesNotBelongToWorld()
-            throws Exception {
-
-        when(
-                characterService
-                        .getCharacterByWorldId(
-                                3L,
-                                10L
-                        )
-        )
-                .thenThrow(
-                        new CharacterNotFoundByWorld(
-                                10L,
-                                3L
-                        )
-                );
-
-        mockMvc.perform(
-                        get("/worlds/3/characters/10")
-                )
-                .andExpect(status().isNotFound());
-
-        verify(characterService)
-                .getCharacterByWorldId(
-                        3L,
-                        10L
-                );
+    void getCharacterByWorld_shouldReturn404_whenCharacterDoesNotBelongToWorld() throws Exception {
+        when(characterService.getCharacterByWorldId(3L, 10L)).thenThrow(new CharacterNotFoundByWorld(10L, 3L));
+        mockMvc.perform(get("/worlds/3/characters/10")).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/3/characters/10")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verify(characterService).getCharacterByWorldId(3L, 10L);
     }
 
 
@@ -334,106 +158,19 @@ class CharacterControllerTest {
     // =========================================================
 
     @Test
-    void createCharacter_shouldReturn200_whenRequestIsValid()
-            throws Exception {
-
-        CreateCharacterDto dto =
-                new CreateCharacterDto(
-                        "Lucian Varek",
-                        "Human",
-                        34,
-                        "Test character",
-                        "Eisenmarkian"
-                );
-
-        when(
-                characterService.createCharacter(
-                        any(CreateCharacterDto.class),
-                        eq(2L)
-                )
-        )
-                .thenReturn(testCharacter);
-
-        mockMvc.perform(
-                        post("/worlds/2/characters").with(csrf())
-                                .contentType(
-                                        "application/json"
-                                )
-                                .content(
-                                        objectMapper
-                                                .writeValueAsString(dto)
-                                )
-                )
-                .andExpect(status().isOk())
-
-                .andExpect(
-                        jsonPath("$.characterId")
-                                .value(10L)
-                )
-
-                .andExpect(
-                        jsonPath("$.characterName")
-                                .value("Lucian Varek")
-                )
-
-                .andExpect(
-                        jsonPath("$.characterSpecies")
-                                .value("Human")
-                )
-
-                .andExpect(
-                        jsonPath("$.age")
-                                .value(34)
-                );
-
-        verify(characterService)
-                .createCharacter(
-                        any(CreateCharacterDto.class),
-                        eq(2L)
-                );
+    void createCharacter_shouldReturn200_whenRequestIsValid() throws Exception {
+        CreateCharacterDto dto=new CreateCharacterDto("Lucian Varek", "Human", 34, "Test character", "Eisenmarkian");
+        when(characterService.createCharacter(any(CreateCharacterDto.class), eq(2L))).thenReturn(testCharacter);
+        mockMvc.perform(post("/worlds/2/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Varek")).andExpect(jsonPath("$.characterSpecies").value("Human")).andExpect(jsonPath("$.age").value(34));
+        verify(characterService).createCharacter(any(CreateCharacterDto.class), eq(2L));
     }
 
-
     @Test
-    void createCharacter_shouldReturn404_whenWorldDoesNotExist()
-            throws Exception {
-
-        CreateCharacterDto dto =
-                new CreateCharacterDto(
-                        "Lucian Varek",
-                        "Human",
-                        34,
-                        "Test character",
-                        "Eisenmarkian"
-                );
-
-        when(
-                characterService.createCharacter(
-                        any(CreateCharacterDto.class),
-                        eq(99L)
-                )
-        )
-                .thenThrow(
-                        new WorldNotFound(99L)
-                );
-
-        mockMvc.perform(
-                        post("/worlds/99/characters").with(csrf())
-                                .contentType(
-                                        "application/json"
-                                )
-                                .content(
-                                        objectMapper
-                                                .writeValueAsString(dto)
-                                )
-                )
-                .andExpect(status().isNotFound());
-
-        verify(characterService)
-                .createCharacter(
-                        any(CreateCharacterDto.class),
-                        eq(99L)
-                );
+    void createCharacter_shouldReturn404_whenWorldDoesNotExist() throws Exception {
+        CreateCharacterDto dto=new CreateCharacterDto("Lucian Varek", "Human", 34, "Test character", "Eisenmarkian");
+        when(characterService.createCharacter(any(CreateCharacterDto.class), eq(99L))).thenThrow(new WorldNotFound(99L));
+        mockMvc.perform(post("/worlds/99/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/99/characters")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verify(characterService).createCharacter(any(CreateCharacterDto.class), eq(99L));
     }
 
 
@@ -442,132 +179,27 @@ class CharacterControllerTest {
     // =========================================================
 
     @Test
-    void updateCharacter_shouldReturn200_whenRequestIsValid()
-            throws Exception {
-
-        UpdateCharacterDto dto =
-                new UpdateCharacterDto(
-                        "Lucian Updated",
-                        "Human",
-                        35,
-                        "Updated description",
-                        "Eisenmarkian"
-                );
-
-        WorldCharacter updated =
-                new WorldCharacter();
-
+    void updateCharacter_shouldReturn200_whenRequestIsValid() throws Exception {
+        UpdateCharacterDto dto=new UpdateCharacterDto("Lucian Updated", "Human", 35, "Updated description", "Eisenmarkian");
+        WorldCharacter updated=new WorldCharacter();
         updated.setCharacterId(10L);
-        updated.setCharacterName(
-                "Lucian Updated"
-        );
+        updated.setCharacterName("Lucian Updated");
         updated.setCharacterSpecies("Human");
         updated.setAge(35);
-        updated.setCharacterDescription(
-                "Updated description"
-        );
-        updated.setCharacterNationality(
-                "Eisenmarkian"
-        );
+        updated.setCharacterDescription("Updated description");
+        updated.setCharacterNationality("Eisenmarkian");
         updated.setWorld(testWorld);
-
-        when(
-                characterService.updateCharacter(
-                        eq(10L),
-                        any(UpdateCharacterDto.class)
-                )
-        )
-                .thenReturn(updated);
-
-        mockMvc.perform(
-                        put("/characters/10").with(csrf())
-                                .contentType(
-                                        "application/json"
-                                )
-                                .content(
-                                        objectMapper
-                                                .writeValueAsString(dto)
-                                )
-                )
-                .andExpect(status().isOk())
-
-                .andExpect(
-                        jsonPath("$.characterId")
-                                .value(10L)
-                )
-
-                .andExpect(
-                        jsonPath("$.characterName")
-                                .value(
-                                        "Lucian Updated"
-                                )
-                )
-
-                .andExpect(
-                        jsonPath("$.characterSpecies")
-                                .value("Human")
-                )
-
-                .andExpect(
-                        jsonPath("$.age")
-                                .value(35)
-                )
-
-                .andExpect(
-                        jsonPath("$.characterDescription")
-                                .value(
-                                        "Updated description"
-                                )
-                );
-
-        verify(characterService)
-                .updateCharacter(
-                        eq(10L),
-                        any(UpdateCharacterDto.class)
-                );
+        when(characterService.updateCharacter(eq(10L), any(UpdateCharacterDto.class))).thenReturn(updated);
+        mockMvc.perform(put("/characters/10").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Updated")).andExpect(jsonPath("$.characterSpecies").value("Human")).andExpect(jsonPath("$.age").value(35)).andExpect(jsonPath("$.characterDescription").value("Updated description"));
+        verify(characterService).updateCharacter(eq(10L), any(UpdateCharacterDto.class));
     }
 
-
     @Test
-    void updateCharacter_shouldReturn404_whenCharacterDoesNotExist()
-            throws Exception {
-
-        UpdateCharacterDto dto =
-                new UpdateCharacterDto(
-                        "Updated",
-                        null,
-                        null,
-                        null,
-                        null
-                );
-
-        when(
-                characterService.updateCharacter(
-                        eq(99L),
-                        any(UpdateCharacterDto.class)
-                )
-        )
-                .thenThrow(
-                        new CharacterNotFound(99L)
-                );
-
-        mockMvc.perform(
-                        put("/characters/99").with(csrf())
-                                .contentType(
-                                        "application/json"
-                                )
-                                .content(
-                                        objectMapper
-                                                .writeValueAsString(dto)
-                                )
-                )
-                .andExpect(status().isNotFound());
-
-        verify(characterService)
-                .updateCharacter(
-                        eq(99L),
-                        any(UpdateCharacterDto.class)
-                );
+    void updateCharacter_shouldReturn404_whenCharacterDoesNotExist() throws Exception {
+        UpdateCharacterDto dto=new UpdateCharacterDto("Updated", null, null, null, null);
+        when(characterService.updateCharacter(eq(99L), any(UpdateCharacterDto.class))).thenThrow(new CharacterNotFound(99L));
+        mockMvc.perform(put("/characters/99").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/characters/99")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verify(characterService).updateCharacter(eq(99L), any(UpdateCharacterDto.class));
     }
 
 
@@ -576,39 +208,16 @@ class CharacterControllerTest {
     // =========================================================
 
     @Test
-    void deleteCharacter_shouldReturn200_whenCharacterExists()
-            throws Exception {
-
-        doNothing()
-                .when(characterService)
-                .deleteCharacter(10L);
-
-        mockMvc.perform(
-                        delete("/characters/10").with(csrf())
-                )
-                .andExpect(status().isOk());
-
-        verify(characterService)
-                .deleteCharacter(10L);
+    void deleteCharacter_shouldReturn200_whenCharacterExists() throws Exception {
+        doNothing().when(characterService).deleteCharacter(10L);
+        mockMvc.perform(delete("/characters/10").with(csrf())).andExpect(status().isOk());
+        verify(characterService).deleteCharacter(10L);
     }
 
-
     @Test
-    void deleteCharacter_shouldReturn404_whenCharacterDoesNotExist()
-            throws Exception {
-
-        doThrow(
-                new CharacterNotFound(99L)
-        )
-                .when(characterService)
-                .deleteCharacter(99L);
-
-        mockMvc.perform(
-                        delete("/characters/99").with(csrf())
-                )
-                .andExpect(status().isNotFound());
-
-        verify(characterService)
-                .deleteCharacter(99L);
+    void deleteCharacter_shouldReturn404_whenCharacterDoesNotExist() throws Exception {
+        doThrow(new CharacterNotFound(99L)).when(characterService).deleteCharacter(99L);
+        mockMvc.perform(delete("/characters/99").with(csrf())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/characters/99")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verify(characterService).deleteCharacter(99L);
     }
 }
