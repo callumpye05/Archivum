@@ -1,4 +1,5 @@
 
+
         package com.cal.archivum;
 
 import com.cal.archivum.dto.impl.*;
@@ -152,7 +153,7 @@ class ResourceOwnershipTest {
     @Test
     @WithMockUser(username = "userB" , roles = "USER")
     void authenticatedUser_gettingSomeoneElsesWorld_Should_Return404() throws Exception {
-        mockMvc.perform(get("/worlds/" + worldA.getWorldId())).andExpect(status().isNotFound());
+        mockMvc.perform(get("/worlds/" + worldA.getWorldId())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/" + worldA.getWorldId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
 
@@ -178,13 +179,13 @@ class ResourceOwnershipTest {
     @Test
     @WithMockUser(username = "userB" , roles = "USER")
     void authenticatedUser_gettingSomeoneElsesCharacter_Should_Return404() throws Exception {
-        mockMvc.perform(get("/characters/" + characterA.getCharacterId())).andExpect(status().isNotFound());
+        mockMvc.perform(get("/characters/" + characterA.getCharacterId())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/characters/" + characterA.getCharacterId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
     @Test
     @WithMockUser(username = "userB" , roles = "USER")
     void authenticatedUser_gettingSomeoneElsesLocation_Should_Return404() throws Exception {
-        mockMvc.perform(get("/locations/" + locationA.getId())).andExpect(status().isNotFound());
+        mockMvc.perform(get("/locations/" + locationA.getId())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/locations/" + locationA.getId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
 
@@ -199,7 +200,7 @@ class ResourceOwnershipTest {
     @Test
     @WithMockUser(username = "userB" , roles ="USER")
     void authenticated_User_ModifyingSomeoneElsesWorld_ShouldReturn404() throws Exception {
-        mockMvc.perform(put("/worlds/" + worldA.getWorldId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateWorld))).andExpect(status().isNotFound());
+        mockMvc.perform(put("/worlds/" + worldA.getWorldId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateWorld))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/" + worldA.getWorldId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
     @Test
@@ -218,7 +219,7 @@ class ResourceOwnershipTest {
     @Test
     @WithMockUser(username = "userB" , roles = "USER")
     void authenticated_User_DeletingSomeoneElsesWorld_ShouldReturn404() throws Exception {
-        mockMvc.perform(delete("/worlds/" + worldA.getWorldId()).with(csrf())).andExpect(status().isNotFound());
+        mockMvc.perform(delete("/worlds/" + worldA.getWorldId()).with(csrf())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/" + worldA.getWorldId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
 
@@ -231,7 +232,7 @@ class ResourceOwnershipTest {
     @Test
     @WithMockUser(username = "userB" , roles = "USER")
     void authenticated_User_AddingCharacterTo_SomeoneElsesWorld_ShouldReturn404() throws Exception {
-        mockMvc.perform(post("/worlds/"+worldA.getWorldId()+"/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createCharDto))).andExpect(status().isNotFound());
+        mockMvc.perform(post("/worlds/"+worldA.getWorldId()+"/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createCharDto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/"+worldA.getWorldId()+"/characters")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
 
@@ -244,7 +245,7 @@ class ResourceOwnershipTest {
     @Test
     @WithMockUser(username = "userB" , roles = "USER")
     void authenticated_User_AddingLocationTo_SomeoneElsesWorld_ShouldReturn404() throws Exception {
-        mockMvc.perform(post("/worlds/"+worldA.getWorldId()+"/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createLocationDto))).andExpect(status().isNotFound());
+        mockMvc.perform(post("/worlds/"+worldA.getWorldId()+"/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createLocationDto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/"+worldA.getWorldId()+"/locations")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
     @Test
@@ -256,7 +257,7 @@ class ResourceOwnershipTest {
     @Test
     @WithMockUser(username = "userB" , roles = "USER")
     void authenticated_User_ModifyingSomeoneElsesLocation_ShouldReturn404() throws Exception {
-        mockMvc.perform(put("/locations/"+locationA.getId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateLocationDto))).andExpect(status().isNotFound());
+        mockMvc.perform(put("/locations/"+locationA.getId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateLocationDto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/locations/" + locationA.getId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
     @Test
@@ -268,7 +269,7 @@ class ResourceOwnershipTest {
     @Test
     @WithMockUser(username = "userB" , roles = "USER")
     void authenticated_User_ModifyingSomeoneElsesCharacter_ShouldReturn404() throws Exception {
-        mockMvc.perform(put("/characters/"+characterA.getCharacterId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateCharDto))).andExpect(status().isNotFound());
+        mockMvc.perform(put("/characters/"+characterA.getCharacterId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateCharDto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/characters/" + characterA.getCharacterId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
     @Test
@@ -280,7 +281,7 @@ class ResourceOwnershipTest {
     @Test
     @WithMockUser(username = "userB" , roles = "USER")
     void authenticated_User_DeletingSomeoneElsesCharacter_ShouldReturn404() throws Exception {
-        mockMvc.perform(delete("/characters/"+characterA.getCharacterId()).with(csrf())).andExpect(status().isNotFound());
+        mockMvc.perform(delete("/characters/"+characterA.getCharacterId()).with(csrf())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/characters/" + characterA.getCharacterId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
     @Test
@@ -292,7 +293,7 @@ class ResourceOwnershipTest {
     @Test
     @WithMockUser(username = "userB" , roles = "USER")
     void authenticated_User_DeletingSomeoneElsesLocation_ShouldReturn404() throws Exception {
-        mockMvc.perform(delete("/locations/"+locationA.getId()).with(csrf())).andExpect(status().isNotFound());
+        mockMvc.perform(delete("/locations/"+locationA.getId()).with(csrf())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/locations/" + locationA.getId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
 
@@ -302,27 +303,8 @@ class ResourceOwnershipTest {
     @WithMockUser(username ="userA" , roles = "USER")
     void authenticated_User_DeletingTheirWorld_ShouldRemoveAllCharactersAndLocations() throws Exception {
         mockMvc.perform(delete("/worlds/"+worldA.getWorldId()).with(csrf())).andExpect(status().isOk());
-
         assertFalse(worldRepository.existsById(worldA.getWorldId()));
         assertFalse(characterRepository.existsById(characterA.getCharacterId()));
         assertFalse(locationRepository.existsById(locationA.getId()));
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

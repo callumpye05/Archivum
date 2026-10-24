@@ -1,74 +1,66 @@
 package com.cal.archivum.exception;
 
+import com.cal.archivum.dto.impl.ErrorResponseDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
+
+import java.time.LocalDateTime;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(WorldNotFound.class)
-    public ResponseEntity<String> handleWorldNotFound(WorldNotFound ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    public ErrorResponseDto build_error(String apiPath , HttpStatus error , String errorMessage , LocalDateTime time) {
+        return new ErrorResponseDto(apiPath , error.getReasonPhrase() ,error.value() ,errorMessage ,time);
     }
 
-    @ExceptionHandler(CharacterNotFound.class)
-    public ResponseEntity<String> handleCharacterNotFound(CharacterNotFound ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    //404 NOT FOUND
+    @ExceptionHandler({
+
+            WorldNotFound.class ,
+            CharacterNotFound.class,
+            LocationNotFound.class ,
+            CharacterNotFoundByWorld.class,
+            LocationNotFoundByWorld.class,
+            UserNotFound.class ,
+            UserNotFoundByEmailOrUsername.class,
+            EmailVerificationTokenNotFound.class
+    })
+    public ResponseEntity<ErrorResponseDto> handleNotFound(RuntimeException ex , WebRequest webRequest) {
+        ErrorResponseDto buildError =build_error(webRequest.getDescription(false) , HttpStatus.NOT_FOUND, ex.getMessage() , LocalDateTime.now());
+        return new ResponseEntity<>(buildError , HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(LocationNotFound.class)
-    public ResponseEntity<String> handleLocationNotFound(LocationNotFound ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    //409 CONFLICT
+    @ExceptionHandler({
+            UsernameAlreadyUsed.class,
+            EmailAlreadyUsed.class
+    })
+    public ResponseEntity<ErrorResponseDto> handleConflict(RuntimeException ex, WebRequest webRequest) {
+        ErrorResponseDto buildError = build_error(webRequest.getDescription(false), HttpStatus.CONFLICT, ex.getMessage(), LocalDateTime.now());
+        return new ResponseEntity<>(buildError,HttpStatus.CONFLICT);
     }
 
-    @ExceptionHandler(CharacterNotFoundByWorld.class)
-    public ResponseEntity<String> handleCharacterNotFoundByWorld(CharacterNotFoundByWorld ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-
+    //400 BAD REQUEST
+    @ExceptionHandler({
+            EmailVerificationTokenExpired.class
+    })
+    public ResponseEntity<ErrorResponseDto> handleBadRequest(RuntimeException ex, WebRequest webRequest) {
+        ErrorResponseDto buildError=build_error(webRequest.getDescription(false), HttpStatus.BAD_REQUEST, ex.getMessage(), LocalDateTime.now());
+        return new ResponseEntity<>(buildError,HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(LocationNotFoundByWorld.class)
-    public ResponseEntity<String> handleLocationNotFoundByWorld(LocationNotFoundByWorld ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-
+    //403 FORBIDDEN
+    @ExceptionHandler({
+            EmailNotVerified.class
+    })
+    public ResponseEntity<ErrorResponseDto> handleForbidden(RuntimeException ex, WebRequest webRequest) {
+        ErrorResponseDto buildError= build_error(webRequest.getDescription(false), HttpStatus.FORBIDDEN, ex.getMessage(), LocalDateTime.now());
+        return new ResponseEntity<>(buildError, HttpStatus.FORBIDDEN);
     }
 
-    @ExceptionHandler (UserNotFound.class)
-    public ResponseEntity<String> handleUserNotFound(UserNotFound ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-    }
-
-    @ExceptionHandler (UsernameAlreadyUsed.class)
-    public ResponseEntity<String> handleUsernameAlreadyUsed(UsernameAlreadyUsed ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
-    }
-
-    @ExceptionHandler (EmailAlreadyUsed.class)
-    public ResponseEntity<String> handleEmailAlreadyUsed(EmailAlreadyUsed ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
-    }
-
-    @ExceptionHandler (UserNotFoundByEmailOrUsername.class)
-    public ResponseEntity<String> handleUserNotFoundByEmailOrUsername (UserNotFoundByEmailOrUsername ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-    }
-
-    @ExceptionHandler (EmailVerificationTokenNotFound.class)
-    public ResponseEntity<String> handleEmailVerificationTokenNotFound(EmailVerificationTokenNotFound ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-    }
-
-    @ExceptionHandler (EmailVerificationTokenExpired.class)
-    public ResponseEntity<String> handleEmailVerificationTokenExpired(EmailVerificationTokenExpired ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-    }
-
-    @ExceptionHandler(EmailNotVerified.class)
-    public ResponseEntity<String> handleEmailNotVerified(EmailNotVerified ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
-    }
 
 
 
