@@ -5,18 +5,20 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 public record UpdateCharacterDto(
-        @Size(max = 100)
+
+        @Size(max = 100, message ="Character name must not exceed 100 characters")
         String characterName,
 
-        @Size(max = 100)
+        @Size(max = 100, message = "Character species must not exceed 100 characters")
         String characterSpecies,
 
-        @PositiveOrZero
+        @PositiveOrZero(message= "Character age cannot be negative")
         Integer age,
 
-        @Size(max = 500)
+        @Size(max =500, message ="Character description must not exceed 500 characters")
         String characterDescription,
 
-        @Size(max = 100)
-        String characterNationality) implements CharacterDto {
-}
+        @Size(max = 100, message = "Character nationality must not exceed 100 characters")
+        String characterNationality
+
+) implements CharacterDto {}
