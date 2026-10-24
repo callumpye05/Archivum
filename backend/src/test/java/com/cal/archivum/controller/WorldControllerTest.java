@@ -1,4 +1,5 @@
-package com.cal.archivum.controller;
+
+        package com.cal.archivum.controller;
 
 import com.cal.archivum.dto.impl.CreateWorldDto;
 import com.cal.archivum.dto.impl.UpdateWorldDto;
@@ -103,7 +104,7 @@ class WorldControllerTest {
 
         when(worldService.getWorld(99L)).thenThrow(new WorldNotFound(99L));
 
-        mockMvc.perform(get("/worlds/99")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/worlds/99")).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/99")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
         verify(worldService).getWorld(99L);
     }
 
@@ -236,7 +237,7 @@ class WorldControllerTest {
     void updateWorld_shouldReturn404_whenWorldDoesNotExist() throws Exception {
         UpdateWorldDto dto=new UpdateWorldDto("Updated", "Updated description");
         when(worldService.updateWorld(eq(99L), any(UpdateWorldDto.class))).thenThrow(new WorldNotFound(99L));
-        mockMvc.perform(put("/worlds/99").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isNotFound());
+        mockMvc.perform(put("/worlds/99").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/99")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
         verify(worldService).updateWorld(eq(99L), any(UpdateWorldDto.class));
     }
 
@@ -265,7 +266,7 @@ class WorldControllerTest {
     @Test
     void deleteWorld_shouldReturn404_whenWorldDoesNotExist() throws Exception {
         doThrow(new WorldNotFound(99L)).when(worldService).deleteWorld(99L);
-        mockMvc.perform(delete("/worlds/99").with(csrf())).andExpect(status().isNotFound());
+        mockMvc.perform(delete("/worlds/99").with(csrf())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/99")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
         verify(worldService).deleteWorld(99L);
     }
 

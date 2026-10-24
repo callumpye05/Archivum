@@ -1,3 +1,4 @@
+
 package com.cal.archivum.controller;
 
 import com.cal.archivum.dto.impl.CreateLocationDto;
@@ -148,7 +149,7 @@ class LocationControllerTest {
         mockMvc.perform(
                         get("/locations/99")
                 )
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/locations/99")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
 
         verify(locationService)
                 .getLocation(99L);
@@ -247,7 +248,7 @@ class LocationControllerTest {
         mockMvc.perform(
                         get("/worlds/99/locations")
                 )
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/99/locations")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
 
         verify(locationService)
                 .getAllLocationsByWorld(99L);
@@ -320,7 +321,7 @@ class LocationControllerTest {
         mockMvc.perform(
                         get("/worlds/3/locations/10")
                 )
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/3/locations/10")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
 
         verify(locationService)
                 .getLocationByWorldId(
@@ -383,7 +384,7 @@ class LocationControllerTest {
                 );
 
         mockMvc.perform(post("/worlds/99/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/99/locations")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
 
         verify(locationService)
                 .createLocation(
@@ -452,7 +453,7 @@ class LocationControllerTest {
     void updateLocation_shouldReturn404_whenLocationDoesNotExist() throws Exception {
         UpdateLocationDto dto = new UpdateLocationDto("Updated", LocationType.CITY, "Updated description");
         when(locationService.updateLocation(eq(99L), any(UpdateLocationDto.class))).thenThrow(new LocationNotFound(99L));
-        mockMvc.perform(put("/locations/99").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isNotFound());
+        mockMvc.perform(put("/locations/99").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/locations/99")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
 
         verify(locationService).updateLocation(eq(99L), any(UpdateLocationDto.class));
     }
@@ -472,7 +473,7 @@ class LocationControllerTest {
     @Test
     void deleteLocation_shouldReturn404_whenLocationDoesNotExist() throws Exception {
         doThrow(new LocationNotFound(99L)).when(locationService).deleteLocation(99L);
-        mockMvc.perform(delete("/locations/99").with(csrf())).andExpect(status().isNotFound());
+        mockMvc.perform(delete("/locations/99").with(csrf())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/locations/99")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
         verify(locationService).deleteLocation(99L);
     }
 
