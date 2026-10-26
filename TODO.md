@@ -7,13 +7,13 @@
 -  GET /users/me and corresponding tests
 -  fix user refreshing page and getting signed out
 -  fix CSRF being disabled
+-  more detailed error handling 
 
 
 ## Now
-- Upgrade error handling and additional annotations on methods weren't necessary
+-  Flyway setup
 
 ## Probably next
-- Flyway migrations 
 - Github Actions tutorial to prepare for CI/CD 
 
 ## Later
