@@ -22,6 +22,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
@@ -164,6 +165,14 @@ class CharacterControllerTest {
         mockMvc.perform(post("/worlds/2/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Varek")).andExpect(jsonPath("$.characterSpecies").value("Human")).andExpect(jsonPath("$.age").value(34));
         verify(characterService).createCharacter(any(CreateCharacterDto.class), eq(2L));
     }
+
+    @Test
+    void createCharacter_should_return400_whenDtoInvalid() throws Exception {
+        CreateCharacterDto dto=new CreateCharacterDto("Lucian Varek", "Human", -5, "Test character", "Eisenmarkian");
+        mockMvc.perform(post("/worlds/2/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/characters")).andExpect(jsonPath("$.errorMessage").value("Character age cannot be negative")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(characterService);
+    }
+
 
     @Test
     void createCharacter_shouldReturn404_whenWorldDoesNotExist() throws Exception {
