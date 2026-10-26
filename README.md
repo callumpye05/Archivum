@@ -86,6 +86,8 @@ Planned work includes:
 - stronger API error handling
 - further validation and domain constraints
 - most likely, a way to sign in through a google account. 
+- Concurrent usage on Worlds, for example friends can work together on the same project, create characters, locations, Species etc. This is an endgame feature, that I want t otie into two courses
+  I have at uni, being : "Données Massive et Cloud" and "Programmation en Multi-thread"
 
 ### Database and Data Management
 

@@ -1,4 +1,3 @@
-
 package com.cal.archivum.controller;
 
 import com.cal.archivum.dto.impl.CreateLocationDto;
@@ -31,6 +30,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.hamcrest.Matchers.containsString;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -367,6 +367,48 @@ class LocationControllerTest {
 
 
     @Test
+    void createLocation_shouldReturn400_whenNameIsBlank() throws Exception {
+        CreateLocationDto dto=new CreateLocationDto("   ", LocationType.CITY, "Industrial city");
+        mockMvc.perform(post("/worlds/2/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/locations")).andExpect(jsonPath("$.errorMessage").value("Location name cannot be null or empty")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(locationService);
+    }
+
+    @Test
+    void createLocation_shouldReturn400_whenTypeIsNull() throws Exception {
+        CreateLocationDto dto=new CreateLocationDto("Ironshield", null, "Industrial city");
+        mockMvc.perform(post("/worlds/2/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/locations")).andExpect(jsonPath("$.errorMessage").value("Location type cannot be null")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(locationService);
+    }
+
+    @Test
+    void createLocation_shouldReturn400_whenDescriptionIsNull() throws Exception {
+        CreateLocationDto dto=new CreateLocationDto("Ironshield", LocationType.CITY, null);
+        mockMvc.perform(post("/worlds/2/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/locations")).andExpect(jsonPath("$.errorMessage").value("Location description cannot be null")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(locationService);
+    }
+
+    @Test
+    void createLocation_shouldReturn400_whenNameExceeds100Characters() throws Exception {
+        CreateLocationDto dto=new CreateLocationDto("A".repeat(101), LocationType.CITY, "Industrial city");
+        mockMvc.perform(post("/worlds/2/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/locations")).andExpect(jsonPath("$.errorMessage").value("Max location size is 100")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(locationService);
+    }
+
+    @Test
+    void createLocation_shouldReturn400_whenDescriptionExceeds500Characters() throws Exception {
+        CreateLocationDto dto=new CreateLocationDto("Ironshield", LocationType.CITY, "A".repeat(501));
+        mockMvc.perform(post("/worlds/2/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/locations")).andExpect(jsonPath("$.errorMessage").value("Max size for the location description is 500")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(locationService);
+    }
+
+    @Test
+    void createLocation_shouldReturn400_whenMultipleFieldsAreInvalid() throws Exception {
+        CreateLocationDto dto=new CreateLocationDto("", null, "Industrial city");
+        mockMvc.perform(post("/worlds/2/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/locations")).andExpect(jsonPath("$.errorMessage", containsString("Location name cannot be null or empty"))).andExpect(jsonPath("$.errorMessage", containsString("Location type cannot be null"))).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(locationService);
+    }
+
+    @Test
     void createLocation_shouldReturn404_whenWorldDoesNotExist()
             throws Exception {
 
@@ -448,6 +490,27 @@ class LocationControllerTest {
                 );
     }
 
+
+    @Test
+    void updateLocation_shouldReturn400_whenNameIsBlank() throws Exception {
+        UpdateLocationDto dto=new UpdateLocationDto("   ", null, null);
+        mockMvc.perform(put("/locations/10").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/locations/10")).andExpect(jsonPath("$.errorMessage").value("Location name cannot be blank")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(locationService);
+    }
+
+    @Test
+    void updateLocation_shouldReturn400_whenNameExceeds100Characters() throws Exception {
+        UpdateLocationDto dto=new UpdateLocationDto("A".repeat(101), null, null);
+        mockMvc.perform(put("/locations/10").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/locations/10")).andExpect(jsonPath("$.errorMessage").value("Location name must not exceed 100 characters")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(locationService);
+    }
+
+    @Test
+    void updateLocation_shouldReturn400_whenDescriptionExceeds500Characters() throws Exception {
+        UpdateLocationDto dto=new UpdateLocationDto(null, null, "A".repeat(501));
+        mockMvc.perform(put("/locations/10").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/locations/10")).andExpect(jsonPath("$.errorMessage").value("Location description must not exceed 500 characters")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(locationService);
+    }
 
     @Test
     void updateLocation_shouldReturn404_whenLocationDoesNotExist() throws Exception {

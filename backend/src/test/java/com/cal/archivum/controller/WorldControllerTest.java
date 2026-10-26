@@ -1,5 +1,4 @@
-
-        package com.cal.archivum.controller;
+package com.cal.archivum.controller;
 
 import com.cal.archivum.dto.impl.CreateWorldDto;
 import com.cal.archivum.dto.impl.UpdateWorldDto;
@@ -24,6 +23,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -204,13 +204,38 @@ class WorldControllerTest {
     }
 
     @Test
-    void createWorld_shouldReturn400_whenRequestIsInvalid() throws Exception {
-        CreateWorldDto invalidDto=new CreateWorldDto("iiiiiiiioopppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp" +
-                "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp", "Some description");
+    void createWorld_shouldReturn400_whenNameIsBlank() throws Exception {
+        CreateWorldDto dto=new CreateWorldDto("   ", "Some description");
+        mockMvc.perform(post("/worlds/create").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/create")).andExpect(jsonPath("$.errorMessage").value("World name is required")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(worldService);
+    }
 
-        mockMvc.perform(post("/worlds/create").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(invalidDto))).andExpect(status().isBadRequest());
+    @Test
+    void createWorld_shouldReturn400_whenNameExceeds100Characters() throws Exception {
+        CreateWorldDto dto=new CreateWorldDto("W".repeat(101), "Some description");
+        mockMvc.perform(post("/worlds/create").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/create")).andExpect(jsonPath("$.errorMessage").value("World name must not exceed 100 characters")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(worldService);
+    }
 
-        verify(worldService, never()).createWorld(any(CreateWorldDto.class));
+    @Test
+    void createWorld_shouldReturn400_whenDescriptionIsNull() throws Exception {
+        CreateWorldDto dto= new CreateWorldDto("Novarii", null);
+        mockMvc.perform(post("/worlds/create").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/create")).andExpect(jsonPath("$.errorMessage").value("World description is required")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(worldService);
+    }
+
+    @Test
+    void createWorld_shouldReturn400_whenDescriptionExceeds500Characters() throws Exception {
+        CreateWorldDto dto =new CreateWorldDto("Novarii", "D".repeat(501));
+        mockMvc.perform(post("/worlds/create").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/create")).andExpect(jsonPath("$.errorMessage").value("World description must not exceed 500 characters")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(worldService);
+    }
+
+    @Test
+    void createWorld_shouldReturn400_whenMultipleFieldsAreInvalid() throws Exception {
+        CreateWorldDto dto= new CreateWorldDto("", null);
+        mockMvc.perform(post("/worlds/create").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/create")).andExpect(jsonPath("$.errorMessage", containsString("World name is required"))).andExpect(jsonPath("$.errorMessage", containsString("World description is required"))).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(worldService);
     }
 
 
@@ -242,14 +267,33 @@ class WorldControllerTest {
     }
 
     @Test
-    void updateWorld_shouldReturn400_whenRequestIsInvalid() throws Exception {
-        UpdateWorldDto invalidDto=new UpdateWorldDto("iiiiiiiioopppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp" +
-                "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp", "");
-
-        mockMvc.perform(put("/worlds/1").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(invalidDto))).andExpect(status().isBadRequest());
-
-        verify(worldService, never()).updateWorld(anyLong(), any(UpdateWorldDto.class));
+    void updateWorld_shouldReturn400_whenNameIsBlank() throws Exception {
+        UpdateWorldDto dto=new UpdateWorldDto("   ", null);
+        mockMvc.perform(put("/worlds/1").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/1")).andExpect(jsonPath("$.errorMessage").value("World name cannot be blank")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(worldService);
     }
+
+    @Test
+    void updateWorld_shouldReturn400_whenNameExceeds100Characters() throws Exception {
+        UpdateWorldDto dto=new UpdateWorldDto("W".repeat(101), null);
+        mockMvc.perform(put("/worlds/1").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/1")).andExpect(jsonPath("$.errorMessage").value("World name must not exceed 100 characters")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(worldService);
+    }
+
+    @Test
+    void updateWorld_shouldReturn400_whenDescriptionExceeds500Characters() throws Exception {
+        UpdateWorldDto dto=new UpdateWorldDto(null, "D".repeat(501));
+        mockMvc.perform(put("/worlds/1").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/1")).andExpect(jsonPath("$.errorMessage").value("World description size cannot exceed 500 characters")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(worldService);
+    }
+
+    @Test
+    void updateWorld_shouldReturn400_whenMultipleFieldsAreInvalid() throws Exception {
+        UpdateWorldDto dto=new UpdateWorldDto("", "D".repeat(501));
+        mockMvc.perform(put("/worlds/1").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/1")).andExpect(jsonPath("$.errorMessage", containsString("World name cannot be blank"))).andExpect(jsonPath("$.errorMessage", containsString("World description size cannot exceed 500 characters"))).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(worldService);
+    }
+
 
     // =========================================================
     // DELETE WORLD

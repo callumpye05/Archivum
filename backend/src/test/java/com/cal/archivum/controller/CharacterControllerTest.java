@@ -26,6 +26,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -166,6 +167,49 @@ class CharacterControllerTest {
     }
 
     @Test
+    void createCharacter_shouldReturn400_whenAgeIsNegative() throws Exception {
+        CreateCharacterDto dto=new CreateCharacterDto("Lucian Varek", "Human", -5, "Test character", "Eisenmarkian");
+        mockMvc.perform(post("/worlds/2/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/characters")).andExpect(jsonPath("$.errorMessage").value("Character age cannot be negative")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(characterService);
+    }
+
+
+    @Test
+    void createCharacter_shouldReturn400_whenNameIsBlank() throws Exception {
+        CreateCharacterDto dto=new CreateCharacterDto("   ", "Human", 34, "Test character", "Eisenmarkian");
+        mockMvc.perform(post("/worlds/2/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/characters")).andExpect(jsonPath("$.errorMessage").value("Character name is required")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(characterService);
+    }
+
+    @Test
+    void createCharacter_shouldReturn400_whenSpeciesIsBlank() throws Exception {
+        CreateCharacterDto dto=new CreateCharacterDto("Lucian Varek", "", 34, "Test character", "Eisenmarkian");
+        mockMvc.perform(post("/worlds/2/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/characters")).andExpect(jsonPath("$.errorMessage").value("Character species is required")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(characterService);
+    }
+
+    @Test
+    void createCharacter_shouldReturn400_whenAgeIsNull() throws Exception {
+        CreateCharacterDto dto=new CreateCharacterDto("Lucian Varek", "Human", null, "Test character", "Eisenmarkian");
+        mockMvc.perform(post("/worlds/2/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/characters")).andExpect(jsonPath("$.errorMessage").value("Character age is required")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(characterService);
+    }
+
+    @Test
+    void createCharacter_shouldReturn400_whenNameExceedsMaximumLength() throws Exception {
+        CreateCharacterDto dto=new CreateCharacterDto("A".repeat(101), "Human", 34, "Test character", "Eisenmarkian");
+        mockMvc.perform(post("/worlds/2/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/characters")).andExpect(jsonPath("$.errorMessage").value("Character name must not exceed 100 characters")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(characterService);
+    }
+
+    @Test
+    void createCharacter_shouldReturn400_whenMultipleFieldsAreInvalid() throws Exception {
+        CreateCharacterDto dto=new CreateCharacterDto("", "Human", -5, "Test character", "Eisenmarkian");
+        mockMvc.perform(post("/worlds/2/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/2/characters")).andExpect(jsonPath("$.errorMessage", containsString("Character name is required"))).andExpect(jsonPath("$.errorMessage", containsString("Character age cannot be negative"))).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(characterService);
+    }
+
+    @Test
     void createCharacter_shouldReturn404_whenWorldDoesNotExist() throws Exception {
         CreateCharacterDto dto=new CreateCharacterDto("Lucian Varek", "Human", 34, "Test character", "Eisenmarkian");
         when(characterService.createCharacter(any(CreateCharacterDto.class), eq(99L))).thenThrow(new WorldNotFound(99L));
@@ -195,6 +239,20 @@ class CharacterControllerTest {
     }
 
     @Test
+    void updateCharacter_shouldReturn400_whenAgeIsNegative() throws Exception {
+        UpdateCharacterDto dto=new UpdateCharacterDto(null, null, -5, null, null);
+        mockMvc.perform(put("/characters/10").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/characters/10")).andExpect(jsonPath("$.errorMessage").value("Character age cannot be negative")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(characterService);
+    }
+
+    @Test
+    void updateCharacter_shouldReturn400_whenDescriptionExceedsMaximumLength() throws Exception {
+        UpdateCharacterDto dto=new UpdateCharacterDto(null, null, null, "A".repeat(501), null);
+        mockMvc.perform(put("/characters/10").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value(400)).andExpect(jsonPath("$.statusText").value("Bad Request")).andExpect(jsonPath("$.apiPath").value("uri=/characters/10")).andExpect(jsonPath("$.errorMessage").value("Character description must not exceed 500 characters")).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        verifyNoInteractions(characterService);
+    }
+
+    @Test
     void updateCharacter_shouldReturn404_whenCharacterDoesNotExist() throws Exception {
         UpdateCharacterDto dto=new UpdateCharacterDto("Updated", null, null, null, null);
         when(characterService.updateCharacter(eq(99L), any(UpdateCharacterDto.class))).thenThrow(new CharacterNotFound(99L));
@@ -221,3 +279,4 @@ class CharacterControllerTest {
         verify(characterService).deleteCharacter(99L);
     }
 }
+

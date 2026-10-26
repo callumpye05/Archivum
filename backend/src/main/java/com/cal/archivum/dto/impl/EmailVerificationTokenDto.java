@@ -1,13 +1,13 @@
 package com.cal.archivum.dto.impl;
 
 import com.cal.archivum.dto.EmailVerificationDto;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record EmailVerificationTokenDto(
 
-        @NotNull
-        @Size(max = 64)
+        @NotBlank(message ="Verification token is required")
+        @Size(max = 64, message = "Verification token must not exceed 64 characters")
         String token
-                                        ) implements EmailVerificationDto {
-}
+
+) implements EmailVerificationDto {}
