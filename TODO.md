@@ -8,15 +8,15 @@
 -  fix user refreshing page and getting signed out
 -  fix CSRF being disabled
 -  more detailed error handling 
+-  Flyway setup
 
 
 ## Now
--  Flyway setup
+- Github Actions tutorial to prepare for CI/CD
 
 ## Probably next
-- Github Actions tutorial to prepare for CI/CD 
+- Password reset 
 
 ## Later
-- Password reset
 - New functionalities , was thinking of,relationships between characters and a graph representation of it. 
 

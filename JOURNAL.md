@@ -29,7 +29,10 @@ Later in the day I came back because the tests weren't working due to duplicate 
 but in future it'll be best to shift towards a shared instance Testcontainer with usable data already inside.
 Additionally  I refactored all NON READ controller tests to check for csrf. This marks the end of the CSRF and session implementation.  
 
-## 10/26/2026 
-
-
+## 10/26/2026
 I took a few days off, upon coming back I watched videos about better exception handling, leartn the importance of having detailed exceptions. Spent some time designing messages and doing the corresponding tests
+
+
+## 10/28/2026 
+Successfully set up flyway migrations , since the database is already up and running for multiple months, the baseline is already established, so after the frist run set it to false. 
+Also tested the migrations against a testing database through DBeaver. 
