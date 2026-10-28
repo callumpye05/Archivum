@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS characters(
     character_species VARCHAR(100) NOT NULL,
     character_age INT NOT NULL,
     character_desc TEXT,
-    character_nationality VARCHAR(100), --for now
+    character_nationality VARCHAR(100),
     created_at TIMESTAMP,
     world_id BIGINT NOT NULL,
     FOREIGN KEY (world_id) REFERENCES worlds(world_id)
