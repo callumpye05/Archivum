@@ -29,7 +29,7 @@ export function DeleteDialog({
           error.status === 401
             ? "Your sign-in is no longer valid. Log in again."
             : error.status === 403
-              ? `You don't have permission to delete this ${kind}.`
+              ? `Deletion was not allowed. Your security token may have expired. Try again, or sign in again if the problem continues.`
               : error.status === 404
                 ? `This ${kind} is no longer available. Refresh the collection to check its current state.`
                 : error.status >= 500

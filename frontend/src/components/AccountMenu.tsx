@@ -5,12 +5,14 @@ import "./AccountMenu.css";
 
 export function AccountMenu({
   username,
+  email,
   onSave,
   onSignOut,
   signingOut = false,
   signOutError = "",
 }: {
   username: string;
+  email: string;
   onSave: (data: UpdateUserDto) => Promise<void>;
   onSignOut: () => void;
   signingOut?: boolean;
@@ -93,6 +95,7 @@ export function AccountMenu({
       {account && (
         <AccountSettings
           username={username}
+          email={email}
           onSave={onSave}
           onClose={closeAccount}
           onSignOut={onSignOut}

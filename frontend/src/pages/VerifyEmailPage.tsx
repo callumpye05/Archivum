@@ -8,9 +8,16 @@ export function VerifyEmailPage({ token }: { token: string | null }) {
     "loading",
   );
   const [message, setMessage] = useState("");
-  const verification = useRef<Promise<void> | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [canRetry, setCanRetry] = useState(false);
+  const verification = useRef<{
+    token: string;
+    attempt: number;
+    request: Promise<void>;
+  } | null>(null);
 
   useEffect(() => {
+    setCanRetry(false);
     if (!token || !/^[a-f0-9]{64}$/.test(token)) {
       setStatus("error");
       setMessage(
@@ -21,27 +28,36 @@ export function VerifyEmailPage({ token }: { token: string | null }) {
       return;
     }
     let active = true;
+    setStatus("loading");
+    setMessage("");
     // Reuse the request when StrictMode runs this effect twice. Tokens are single use.
-    verification.current ??= verifyEmail(token);
-    verification.current
+    if (
+      verification.current?.token !== token ||
+      verification.current.attempt !== attempt
+    )
+      verification.current = { token, attempt, request: verifyEmail(token) };
+    verification.current.request
       .then(() => {
         if (active) setStatus("success");
       })
       .catch((error: unknown) => {
         if (!active) return;
         setStatus("error");
+        setCanRetry(
+          !(error instanceof ApiError && [400, 404].includes(error.status)),
+        );
         setMessage(
           error instanceof ApiError && error.status === 400
             ? "This verification link has expired. Links are valid for one hour."
             : error instanceof ApiError && error.status === 404
               ? "This verification link is invalid or has already been used. If you already verified your email, continue to login."
-              : "We could not confirm your email verification. Check your connection and reopen the link to try again. If it already succeeded, you can continue to login.",
+              : "We could not confirm your email verification. Check your connection and try again. If it already succeeded, you can continue to login.",
         );
       });
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [token, attempt]);
 
   return (
     <section
@@ -58,6 +74,11 @@ export function VerifyEmailPage({ token }: { token: string | null }) {
         <p className="inline-error" role="alert">
           {message}
         </p>
+      )}
+      {status === "error" && canRetry && (
+        <button type="button" onClick={() => setAttempt((value) => value + 1)}>
+          Try again
+        </button>
       )}
       {status !== "loading" && (
         <button

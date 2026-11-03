@@ -1,7 +1,9 @@
-import { ApiError } from "./client";
+import { ApiError, UnconfirmedWriteError } from "./client";
 
 // Use safe copy rather than echoing a server response that may contain input.
 export function registrationError(error: unknown): string {
+  if (error instanceof UnconfirmedWriteError)
+    return "Could not confirm whether your account was created. Check your inbox for a verification email or try logging in before registering again.";
   if (!(error instanceof ApiError)) {
     return "Could not reach Archivum. Check your connection and try again.";
   }

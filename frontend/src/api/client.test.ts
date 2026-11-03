@@ -5,10 +5,23 @@ import {
   request,
   signIn,
   signOut,
+  UnconfirmedWriteError,
 } from "./client";
 import { registerUser, updateUser, verifyEmail } from "./index";
 
 afterEach(() => vi.unstubAllGlobals());
+
+it.each([{}, null, { headerName: "X-CSRF-TOKEN", token: "" }])(
+  "does not send a write with a malformed CSRF response: %j",
+  async (body) => {
+    const fetch = vi.fn().mockResolvedValue(Response.json(body));
+    vi.stubGlobal("fetch", fetch);
+    await expect(
+      request("/worlds/create", "POST", { worldName: "New" }),
+    ).rejects.toThrow("Could not prepare a secure request");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  },
+);
 
 it("uses cookies, form login, the server's CSRF header and new tokens after login/logout", async () => {
   let token = "guest-token";
@@ -143,7 +156,10 @@ it("uses the returned user after account changes without retaining credentials",
     ),
   );
   vi.stubGlobal("fetch", fetch);
-  await expect(updateUser({ userName: "Renamed" })).resolves.toBe("Renamed");
+  await expect(updateUser({ userName: "Renamed" })).resolves.toEqual({
+    userName: "Renamed",
+    email: "new@example.com",
+  });
   expect(fetch).toHaveBeenCalledWith(
     "/api/users/me",
     expect.objectContaining({
@@ -216,4 +232,89 @@ it("does not send a write when fetching CSRF fails", async () => {
     "/api/auth/csrf",
     expect.objectContaining({ credentials: "include" }),
   );
+});
+
+it.each([400, 404, 409])(
+  "reads Spring's ErrorResponseDto at HTTP %i",
+  async (status) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        Response.json(
+          {
+            apiPath: "uri=/worlds/7",
+            statusText: "Error",
+            errorCode: status,
+            errorMessage: "World name cannot be blank",
+            errorTime: "2026-11-03T12:00:00",
+          },
+          { status },
+        ),
+      ),
+    );
+    await expect(request("/worlds/7")).rejects.toMatchObject({
+      status,
+      message: "World name cannot be blank",
+    });
+  },
+);
+
+it.each(["", "<html>Forbidden</html>", '{"error":"Forbidden"}', "null"])(
+  "explains a CSRF rejection without displaying an unhelpful body: %s",
+  async (body) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(body, { status: 403 })),
+    );
+    await expect(request("/worlds/7")).rejects.toThrow(
+      "security token may have expired",
+    );
+  },
+);
+
+it("rejects malformed successful JSON with recoverable copy", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(new Response("<html>Proxy</html>")),
+  );
+  await expect(request("/worlds")).rejects.toThrow("unexpected response");
+});
+
+it.each(["network", "malformed response"])(
+  "does not replay a write with an uncertain %s outcome",
+  async (failure) => {
+    const fetch = vi.fn(async (path: string) => {
+      if (path === "/api/auth/csrf")
+        return Response.json({ headerName: "X-CSRF-TOKEN", token: "csrf" });
+      if (failure === "network") throw new TypeError("Failed to fetch");
+      return new Response("<html>Proxy</html>");
+    });
+    vi.stubGlobal("fetch", fetch);
+    await expect(
+      request("/worlds/create", "POST", { worldName: "New", worldDesc: "" }),
+    ).rejects.toBeInstanceOf(UnconfirmedWriteError);
+    expect(
+      fetch.mock.calls.filter(([path]) => path === "/api/worlds/create"),
+    ).toHaveLength(1);
+  },
+);
+
+it("rejects an old successful response after logout even if transport cancellation loses the race", async () => {
+  let finish!: (response: Response) => void;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (path: string) => {
+      if (path === "/api/worlds")
+        return new Promise<Response>((resolve) => {
+          finish = resolve;
+        });
+      if (path === "/api/auth/csrf")
+        return Response.json({ headerName: "X-CSRF-TOKEN", token: "csrf" });
+      return new Response(null);
+    }),
+  );
+  const pending = request("/worlds");
+  await signOut();
+  finish(Response.json([{ worldId: 7, worldName: "Old session data" }]));
+  await expect(pending).rejects.toThrow("Your session changed");
 });

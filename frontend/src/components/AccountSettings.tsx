@@ -5,6 +5,7 @@ import { Modal } from "./Modal";
 
 export function AccountSettings({
   username,
+  email: currentEmail,
   onSave,
   onClose,
   onSignOut,
@@ -12,6 +13,7 @@ export function AccountSettings({
   signOutError = "",
 }: {
   username: string;
+  email: string;
   onSave: (data: UpdateUserDto) => Promise<void>;
   onClose: () => void;
   onSignOut: () => void;
@@ -52,7 +54,7 @@ export function AccountSettings({
     }
     const data: UpdateUserDto = {
       ...(name === username ? {} : { userName: name }),
-      ...(email ? { email } : {}),
+      ...(email && email !== currentEmail ? { email } : {}),
       ...(password.value ? { password: password.value } : {}),
     };
     if (!Object.keys(data).length) {
@@ -89,6 +91,7 @@ export function AccountSettings({
       <p className="account-identity">
         Signed in as <strong>{username}</strong>
       </p>
+      <p className="form-note">Current email: {currentEmail}</p>
       <form onSubmit={submit} aria-busy={busy}>
         <fieldset className="form-fields registration-fields" disabled={busy}>
           <label htmlFor="account-username">
@@ -137,8 +140,7 @@ export function AccountSettings({
         </fieldset>
         <p className="form-note">
           Changing your username signs you out so you can log in with the new
-          name. Leave new email and password blank to keep them unchanged. Your
-          current email is not available here.
+          name. Leave new email and password blank to keep them unchanged.
         </p>
         {error && (
           <p className="inline-error" role="alert">

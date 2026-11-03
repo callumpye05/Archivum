@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ApiError } from "../api/client";
+import { ApiError, UnconfirmedWriteError } from "../api/client";
 import { PanoramaViewer } from "../components/PanoramaViewer";
 import { demoPanoramas } from "../data/panoramas";
 import { RegisterPage } from "./RegisterPage";
@@ -10,11 +10,13 @@ export function AuthLanding({
   register,
   login,
   signedOut = false,
+  sessionExpired = false,
   verificationToken,
 }: {
   register: boolean;
   login: (username: string, password: string) => Promise<void>;
   signedOut?: boolean;
+  sessionExpired?: boolean;
   verificationToken?: string | null;
 }) {
   const verifying = verificationToken !== undefined;
@@ -57,6 +59,11 @@ export function AuthLanding({
           </p>
         </header>
         <div className="auth-frame">
+          {sessionExpired && (
+            <p className="auth-signout-note" role="alert">
+              Your session expired. Log in again to return to your archive.
+            </p>
+          )}
           {signedOut && (
             <p className="auth-signout-note" role="status">
               Signed out. Log in to open your archive again.
@@ -149,6 +156,10 @@ function LoginForm({
       } else if (error instanceof ApiError && error.status === 401) {
         setError(
           "The username or password wasn't recognized. Please try again.",
+        );
+      } else if (error instanceof UnconfirmedWriteError) {
+        setError(
+          "Could not confirm your sign-in. Check your connection and try logging in again.",
         );
       } else if (error instanceof Error) {
         setError(error.message);
