@@ -36,3 +36,9 @@ I took a few days off, upon coming back I watched videos about better exception 
 ## 10/28/2026 
 Successfully set up flyway migrations , since the database is already up and running for multiple months, the baseline is already established, so after the frist run set it to false. 
 Also tested the migrations against a testing database through DBeaver. 
+
+## 11/03/2026 
+
+Today I updated the frontend , whilst also making use of an independant audit to detect security faults within Archivum. As a result, 
+a crucial data problem was revealed, showing that hashed passwords could be obtained through certain endpoints, notably those that reference a user. 
+As a result, I decided to fix this using a custom dto response. It highlighted the importance of being cuatious when returning JPA entities.
