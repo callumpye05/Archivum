@@ -3,6 +3,7 @@ package com.cal.archivum.service.impl;
 
 import com.cal.archivum.dto.LocationDto;
 import com.cal.archivum.dto.impl.CreateLocationDto;
+import com.cal.archivum.dto.impl.LocationResponseDto;
 import com.cal.archivum.dto.impl.UpdateLocationDto;
 import com.cal.archivum.entity.Location;
 import com.cal.archivum.entity.User;
@@ -32,34 +33,37 @@ public class LocationService implements ILocationService {
     }
 
     @Override
-    public List<Location> getAllLocationsByWorld(Long worldId) {
+    public List<LocationResponseDto> getAllLocationsByWorld(Long worldId) {
         User currentUser = userService.getCurrentUser();
         World world = worldRepository.findByWorldIdAndOwner(worldId, currentUser).orElseThrow(() -> new WorldNotFound(worldId));
-        return locationRepository.findAllByWorld(world);
+        return locationRepository.findAllByWorld(world).stream().map(this::toDto).toList();
     }
 
     @Override
-    public Location getLocation(Long id) {
+    public LocationResponseDto getLocation(Long id) {
         User currentUser = userService.getCurrentUser();
-        return locationRepository.findByIdAndWorldOwner(id , currentUser).orElseThrow(() -> new LocationNotFound(id));
+        Location location = locationRepository.findByIdAndWorldOwner(id , currentUser).orElseThrow(() -> new LocationNotFound(id));
+        return toDto(location);
     }
 
     @Override
-    public Location getLocationByWorldId(Long worldId, Long locationId) {
+    public LocationResponseDto getLocationByWorldId(Long worldId, Long locationId) {
         User currentUser = userService.getCurrentUser();
-        return locationRepository.findByIdAndWorldWorldIdAndWorldOwner(locationId , worldId , currentUser).orElseThrow(()-> new LocationNotFoundByWorld(locationId, worldId));
+        Location location = locationRepository.findByIdAndWorldWorldIdAndWorldOwner(locationId , worldId , currentUser).orElseThrow(()-> new LocationNotFoundByWorld(locationId, worldId));
+        return toDto(location);
     }
 
     @Override
-    public Location createLocation(CreateLocationDto dto, Long worldId) {
+    public LocationResponseDto createLocation(CreateLocationDto dto, Long worldId) {
         User currentUser = userService.getCurrentUser();
         World world = worldRepository.findByWorldIdAndOwner(worldId , currentUser).orElseThrow(() -> new WorldNotFound(worldId));
         Location newLocation = transformFromDto(dto , world);
-        return locationRepository.save(newLocation);
+        Location savedLocation =  locationRepository.save(newLocation);
+        return toDto(savedLocation);
     }
 
     @Override
-    public Location updateLocation(Long id, UpdateLocationDto dto) {
+    public LocationResponseDto updateLocation(Long id, UpdateLocationDto dto) {
         User currentUser = userService.getCurrentUser();
         Location existingLocation= locationRepository.findByIdAndWorldOwner(id, currentUser).orElseThrow(() -> new LocationNotFound(id));
 
@@ -72,7 +76,8 @@ public class LocationService implements ILocationService {
         if(dto.locationType() != null) {
            existingLocation.setLocationType(dto.locationType());
         }
-        return locationRepository.save(existingLocation);
+        Location updatedLocation = locationRepository.save(existingLocation);
+        return toDto(updatedLocation);
     }
 
 
@@ -92,6 +97,12 @@ public class LocationService implements ILocationService {
         location.setLocationDescription(dto.locationDesc());
         location.setWorld(world);
         return location;
+    }
+
+    @Override
+    public LocationResponseDto toDto(Location location) {
+        World world = location.getWorld();
+        return new LocationResponseDto(location.getId() , location.getLocationName() , location.getLocationType() , location.getLocationDescription(),world.getWorldId());
     }
 }
 
