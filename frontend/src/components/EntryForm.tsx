@@ -5,16 +5,27 @@ export type Field = {
   name: string;
   label: string;
   maxLength?: number;
+  required?: boolean;
   kind?: "textarea" | "age" | "locationType";
 };
 export const worldFields: Field[] = [
-  { name: "worldName", label: "World name", maxLength: 100 },
+  { name: "worldName", label: "World name", maxLength: 100, required: true },
   { name: "worldDesc", label: "Description", maxLength: 500, kind: "textarea" },
 ];
 export const characterFields: Field[] = [
-  { name: "characterName", label: "Character name", maxLength: 100 },
-  { name: "characterSpecies", label: "Species", maxLength: 100 },
-  { name: "age", label: "Age", kind: "age" },
+  {
+    name: "characterName",
+    label: "Character name",
+    maxLength: 100,
+    required: true,
+  },
+  {
+    name: "characterSpecies",
+    label: "Species",
+    maxLength: 100,
+    required: true,
+  },
+  { name: "age", label: "Age", kind: "age", required: true },
   { name: "characterNationality", label: "Nationality", maxLength: 100 },
   {
     name: "characterDescription",
@@ -24,8 +35,18 @@ export const characterFields: Field[] = [
   },
 ];
 export const locationFields: Field[] = [
-  { name: "locationName", label: "Location name", maxLength: 100 },
-  { name: "locationType", label: "Location type", kind: "locationType" },
+  {
+    name: "locationName",
+    label: "Location name",
+    maxLength: 100,
+    required: true,
+  },
+  {
+    name: "locationType",
+    label: "Location type",
+    kind: "locationType",
+    required: true,
+  },
   {
     name: "locationDesc",
     label: "Description",
@@ -60,10 +81,41 @@ export function EntryForm({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const submitting = useRef(false);
-  async function submit(event: FormEvent) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting.current) return;
+    const errors: Record<string, string> = {};
+    for (const field of fields) {
+      const value = values[field.name];
+      if (field.required && !value.trim())
+        errors[field.name] = `${field.label} is required.`;
+      else if (field.maxLength && value.length > field.maxLength)
+        errors[field.name] = `Use at most ${field.maxLength} characters.`;
+      else if (
+        field.kind === "age" &&
+        (!Number.isInteger(Number(value)) ||
+          Number(value) < 0 ||
+          Number(value) > 2147483647)
+      )
+        errors[field.name] = "Enter a whole number from 0 to 2147483647.";
+      else if (
+        field.kind === "locationType" &&
+        !locationTypes.some((type) => type === value)
+      )
+        errors[field.name] = "Choose a location type.";
+    }
+    setFieldErrors(errors);
+    setError("");
+    const firstInvalid = fields.find((field) => errors[field.name]);
+    if (firstInvalid) {
+      setError("Check the highlighted fields before saving.");
+      (
+        event.currentTarget.elements.namedItem(firstInvalid.name) as HTMLElement
+      )?.focus();
+      return;
+    }
     submitting.current = true;
     setBusy(true);
     setError("");
@@ -80,7 +132,8 @@ export function EntryForm({
   return (
     <Modal title={title} onClose={onClose} busy={busy}>
       <p className="form-note">{context}</p>
-      <form onSubmit={submit} aria-busy={busy}>
+      <p className="form-note">Fields marked * are required.</p>
+      <form onSubmit={submit} aria-busy={busy} noValidate>
         <fieldset disabled={busy} className="entry-fields">
           <div className="form-fields">
             {fields.map((field) => {
@@ -88,18 +141,32 @@ export function EntryForm({
                 id: field.name,
                 name: field.name,
                 value: values[field.name],
-                "aria-describedby": field.maxLength
-                  ? `${field.name}-limit`
-                  : undefined,
+                required: field.required,
+                "aria-invalid": !!fieldErrors[field.name],
+                "aria-describedby":
+                  [
+                    field.maxLength ? `${field.name}-limit` : "",
+                    fieldErrors[field.name] ? `${field.name}-error` : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ") || undefined,
                 onChange: (
                   event: React.ChangeEvent<
                     HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
                   >,
-                ) => setValues({ ...values, [field.name]: event.target.value }),
+                ) => {
+                  setValues({ ...values, [field.name]: event.target.value });
+                  setFieldErrors((previous) => ({
+                    ...previous,
+                    [field.name]: "",
+                  }));
+                  setError("");
+                },
               };
               return (
                 <label key={field.name} htmlFor={field.name}>
                   {field.label}
+                  {field.required ? " *" : ""}
                   {field.kind === "textarea" ? (
                     <textarea {...props} maxLength={field.maxLength} />
                   ) : field.kind === "locationType" ? (
@@ -114,12 +181,16 @@ export function EntryForm({
                     <input
                       {...props}
                       type={field.kind === "age" ? "number" : "text"}
-                      required={field.kind === "age"}
                       min={field.kind === "age" ? 0 : undefined}
                       max={field.kind === "age" ? 2147483647 : undefined}
                       step={field.kind === "age" ? 1 : undefined}
                       maxLength={field.maxLength}
                     />
+                  )}
+                  {fieldErrors[field.name] && (
+                    <small className="inline-error" id={`${field.name}-error`}>
+                      {fieldErrors[field.name]}
+                    </small>
                   )}
                   {field.maxLength && (
                     <small id={`${field.name}-limit`}>

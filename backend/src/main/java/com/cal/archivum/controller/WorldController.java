@@ -2,6 +2,7 @@ package com.cal.archivum.controller;
 
 import com.cal.archivum.dto.impl.CreateWorldDto;
 import com.cal.archivum.dto.impl.UpdateWorldDto;
+import com.cal.archivum.dto.impl.WorldResponseDto;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.service.IWorldService;
 import jakarta.validation.Valid;
@@ -19,23 +20,23 @@ public class WorldController {
     }
 
     @GetMapping("/worlds")
-    public List<World> getAllWorlds() {
+    public List<WorldResponseDto> getAllWorlds() {
         return worldService.getAllWorlds();
     }
 
     @GetMapping("/worlds/{id}")
-    public World getWorld(@PathVariable Long id) {
+    public WorldResponseDto getWorld(@PathVariable Long id) {
        return worldService.getWorld(id);
     }
 
     @PostMapping("worlds/create")
-    public World createWorld( @Valid @RequestBody CreateWorldDto dto) {
+    public WorldResponseDto createWorld( @Valid @RequestBody CreateWorldDto dto) {
         return worldService.createWorld(dto);
 
     }
 
     @PutMapping("worlds/{id}")
-    public World updateWorld(@PathVariable Long id, @Valid @RequestBody UpdateWorldDto dto) {
+    public WorldResponseDto updateWorld(@PathVariable Long id, @Valid @RequestBody UpdateWorldDto dto) {
         return worldService.updateWorld(id , dto);
 
     }

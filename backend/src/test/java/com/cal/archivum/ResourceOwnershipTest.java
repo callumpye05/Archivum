@@ -1,6 +1,4 @@
-
-
-        package com.cal.archivum;
+package com.cal.archivum;
 
 import com.cal.archivum.dto.impl.*;
 import com.cal.archivum.entity.Location;
@@ -21,12 +19,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
+
 import static com.cal.archivum.enums.LocationType.CITY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:ownershiptest",
@@ -34,42 +32,27 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.datasource.username=sa",
         "spring.datasource.password=",
         "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.sql.init.mode=never"
+        "spring.sql.init.mode=never",
+        "spring.flyway.enabled=false"
 })
 @AutoConfigureMockMvc
 class ResourceOwnershipTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private WorldRepository worldRepository;
-
-    @Autowired
-    private LocationRepository locationRepository;
-
-    @Autowired
-    private CharacterRepository characterRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private UserRepository userRepository;
+    @Autowired private WorldRepository worldRepository;
+    @Autowired private LocationRepository locationRepository;
+    @Autowired private CharacterRepository characterRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
     private User userA;
-    private User userB;
     private World worldA;
-    private UpdateWorldDto updateWorld;
-
+    private World worldC;
     private Location locationA;
     private WorldCharacter characterA;
+    private UpdateWorldDto updateWorld;
     private CreateWorldDto createWorld;
-
-    private World worldC;
     private CreateCharacterDto createCharDto;
     private CreateLocationDto createLocationDto;
     private UpdateLocationDto updateLocationDto;
@@ -77,7 +60,6 @@ class ResourceOwnershipTest {
 
     @BeforeEach
     void setup() {
-
         characterRepository.deleteAll();
         locationRepository.deleteAll();
         worldRepository.deleteAll();
@@ -86,28 +68,27 @@ class ResourceOwnershipTest {
         userA = new User();
         userA.setUserName("userA");
         userA.setEmail("userA@test.com");
-
         userA.setUserHashedPassword(passwordEncoder.encode("password"));
-        userRepository.save(userA);
+        userA = userRepository.save(userA);
 
         worldA = new World();
         worldA.setWorldDesc("test world");
         worldA.setWorldName("World A");
         worldA.setOwner(userA);
-        worldRepository.save(worldA);
+        worldA = worldRepository.save(worldA);
 
         worldC = new World();
         worldC.setWorldDesc("test world");
         worldC.setWorldName("World C");
         worldC.setOwner(userA);
-        worldRepository.save(worldC);
+        worldC = worldRepository.save(worldC);
 
         locationA = new Location();
         locationA.setLocationName("test location");
         locationA.setLocationDescription("test");
         locationA.setLocationType(CITY);
         locationA.setWorld(worldA);
-        locationRepository.save(locationA);
+        locationA = locationRepository.save(locationA);
 
         characterA = new WorldCharacter();
         characterA.setCharacterName("test");
@@ -116,193 +97,170 @@ class ResourceOwnershipTest {
         characterA.setCharacterNationality("french");
         characterA.setCharacterSpecies("human");
         characterA.setWorld(worldA);
+        characterA = characterRepository.save(characterA);
 
-
-
-
-        createCharDto = new CreateCharacterDto("test2" , "human" , 22 , "test char" , "french");
-        createLocationDto = new CreateLocationDto("test2", CITY, "test location");
-        updateLocationDto = new UpdateLocationDto("NewLocation",LocationType.LANDMARK, "New description");
-        updateCharDto = new UpdateCharacterDto("NewName", "genii", 23, "New description", "british");
-
-        characterRepository.save(characterA);
-
-
-        userB = new User();
+        User userB = new User();
         userB.setUserName("userB");
         userB.setEmail("userB@test.com");
-
         userB.setUserHashedPassword(passwordEncoder.encode("password"));
         userRepository.save(userB);
-        updateWorld = new UpdateWorldDto("NewName" , null);
+
+        updateWorld = new UpdateWorldDto("NewName", null);
         createWorld = new CreateWorldDto("NewWorld", "NewDescription");
-
-
+        createCharDto = new CreateCharacterDto("test2", "human", 22, "test char", "french");
+        createLocationDto = new CreateLocationDto("test2", CITY, "test location");
+        updateLocationDto = new UpdateLocationDto("NewLocation", LocationType.LANDMARK, "New description");
+        updateCharDto = new UpdateCharacterDto("NewName", "genii", 23, "New description", "british");
     }
 
+    // GET: OWNERSHIP AND SAFE DTO RESPONSES
 
     @Test
     @WithMockUser(username = "userA", roles = "USER")
-    void authenticatedUser_GettingTheirWorld_ShouldReturn200()
-            throws Exception {
-
-        mockMvc.perform(get("/worlds/" + worldA.getWorldId())).andExpect(status().isOk()).andExpect(jsonPath("$.worldId").value(worldA.getWorldId()))
-                .andExpect(jsonPath("$.worldName").value("World A"));
+    void authenticatedUser_GettingTheirWorld_ShouldReturn200() throws Exception {
+        mockMvc.perform(get("/worlds/" + worldA.getWorldId())).andExpect(status().isOk()).andExpect(jsonPath("$.worldId").value(worldA.getWorldId())).andExpect(jsonPath("$.worldName").value("World A")).andExpect(jsonPath("$.worldDesc").value("test world")).andExpect(jsonPath("$.owner").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist()).andExpect(jsonPath("$..email").doesNotExist());
     }
 
     @Test
-    @WithMockUser(username = "userB" , roles = "USER")
+    @WithMockUser(username = "userB", roles = "USER")
     void authenticatedUser_gettingSomeoneElsesWorld_Should_Return404() throws Exception {
         mockMvc.perform(get("/worlds/" + worldA.getWorldId())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/" + worldA.getWorldId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
-
     @Test
     @WithMockUser(username = "userA", roles = "USER")
-    void authenticatedUser_GettingTheirCharacter_ShouldReturn200()
-            throws Exception {
-
-        mockMvc.perform(get("/characters/" + characterA.getCharacterId())).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(characterA.getCharacterId()))
-                .andExpect(jsonPath("$.characterName").value("test")).andExpect(jsonPath("$.characterDescription").value("test character")).andExpect(jsonPath("$.age")
-                        .value(19)).andExpect(jsonPath("$.characterNationality").value("french")).andExpect(jsonPath("$.characterSpecies").value("human"));
+    void authenticatedUser_GettingTheirCharacter_ShouldReturn200() throws Exception {
+        mockMvc.perform(get("/characters/" + characterA.getCharacterId())).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(characterA.getCharacterId())).andExpect(jsonPath("$.characterName").value("test")).andExpect(jsonPath("$.characterDescription").value("test character")).andExpect(jsonPath("$.age").value(19)).andExpect(jsonPath("$.characterNationality").value("french")).andExpect(jsonPath("$.characterSpecies").value("human")).andExpect(jsonPath("$.worldId").value(worldA.getWorldId())).andExpect(jsonPath("$.world").doesNotExist()).andExpect(jsonPath("$..owner").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist());
     }
 
     @Test
     @WithMockUser(username = "userA", roles = "USER")
-    void authenticatedUser_GettingTheirLocation_ShouldReturn200()
-            throws Exception {
-
-        mockMvc.perform(get("/locations/" + locationA.getId())).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(locationA.getId())).andExpect(jsonPath("$.locationName").value("test location")).andExpect(jsonPath("$.locationDescription").value("test"))
-                .andExpect(jsonPath("$.locationType").value("CITY"));
+    void authenticatedUser_GettingTheirLocation_ShouldReturn200() throws Exception {
+        mockMvc.perform(get("/locations/" + locationA.getId())).andExpect(status().isOk()).andExpect(jsonPath("$.locationId").value(locationA.getId())).andExpect(jsonPath("$.locationName").value("test location")).andExpect(jsonPath("$.locationDesc").value("test")).andExpect(jsonPath("$.locationType").value("CITY")).andExpect(jsonPath("$.worldId").value(worldA.getWorldId())).andExpect(jsonPath("$.world").doesNotExist()).andExpect(jsonPath("$..owner").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist());
     }
 
     @Test
-    @WithMockUser(username = "userB" , roles = "USER")
+    @WithMockUser(username = "userB", roles = "USER")
     void authenticatedUser_gettingSomeoneElsesCharacter_Should_Return404() throws Exception {
         mockMvc.perform(get("/characters/" + characterA.getCharacterId())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/characters/" + characterA.getCharacterId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
     @Test
-    @WithMockUser(username = "userB" , roles = "USER")
+    @WithMockUser(username = "userB", roles = "USER")
     void authenticatedUser_gettingSomeoneElsesLocation_Should_Return404() throws Exception {
         mockMvc.perform(get("/locations/" + locationA.getId())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/locations/" + locationA.getId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
+    // WORLD WRITES
 
     @Test
-    @WithMockUser(username = "userA" , roles = "USER")
+    @WithMockUser(username = "userA", roles = "USER")
     void authenticated_User_ModifyingTheirWorld_ShouldReturn200() throws Exception {
-        mockMvc.perform(put("/worlds/" + worldA.getWorldId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateWorld))).andExpect(status().isOk()).andExpect(jsonPath("$.worldId").value(worldA.getWorldId()))
-                .andExpect(jsonPath("$.worldName").value("NewName"));
-
+        mockMvc.perform(put("/worlds/" + worldA.getWorldId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateWorld))).andExpect(status().isOk()).andExpect(jsonPath("$.worldId").value(worldA.getWorldId())).andExpect(jsonPath("$.worldName").value("NewName")).andExpect(jsonPath("$.worldDesc").value("test world")).andExpect(jsonPath("$.owner").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist());
     }
 
     @Test
-    @WithMockUser(username = "userB" , roles ="USER")
+    @WithMockUser(username = "userB", roles = "USER")
     void authenticated_User_ModifyingSomeoneElsesWorld_ShouldReturn404() throws Exception {
         mockMvc.perform(put("/worlds/" + worldA.getWorldId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateWorld))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/" + worldA.getWorldId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
     @Test
-    @WithMockUser(username = "userA" , roles = "USER")
+    @WithMockUser(username = "userA", roles = "USER")
     void authenticated_User_CreatingWorld_ShouldReturn200() throws Exception {
-        mockMvc.perform(post("/worlds/create").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createWorld))).andExpect(status().isOk()).andExpect(jsonPath("$.worldName").value("NewWorld"))
-                .andExpect(jsonPath("$.worldDesc").value("NewDescription"));
+        mockMvc.perform(post("/worlds/create").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createWorld))).andExpect(status().isOk()).andExpect(jsonPath("$.worldId").isNumber()).andExpect(jsonPath("$.worldName").value("NewWorld")).andExpect(jsonPath("$.worldDesc").value("NewDescription")).andExpect(jsonPath("$.owner").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist());
     }
 
     @Test
-    @WithMockUser(username = "userA" , roles = "USER")
+    @WithMockUser(username = "userA", roles = "USER")
     void authenticated_User_DeletingTheirWorld_ShouldReturn200() throws Exception {
         mockMvc.perform(delete("/worlds/" + worldC.getWorldId()).with(csrf())).andExpect(status().isOk());
     }
 
     @Test
-    @WithMockUser(username = "userB" , roles = "USER")
+    @WithMockUser(username = "userB", roles = "USER")
     void authenticated_User_DeletingSomeoneElsesWorld_ShouldReturn404() throws Exception {
         mockMvc.perform(delete("/worlds/" + worldA.getWorldId()).with(csrf())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/" + worldA.getWorldId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
+    // CHARACTER AND LOCATION WRITES
 
     @Test
-    @WithMockUser(username = "userA" , roles = "USER")
+    @WithMockUser(username = "userA", roles = "USER")
     void authenticated_User_AddingCharacterTo_TheirWorld_ShouldReturn200() throws Exception {
-        mockMvc.perform(post("/worlds/"+worldA.getWorldId()+"/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createCharDto))).andExpect(status().isOk()).andExpect(jsonPath("$.characterName").value("test2")).andExpect(jsonPath("$.characterSpecies").value("human")).andExpect(jsonPath("$.age").value(22)).andExpect(jsonPath("$.characterDescription").value("test char")).andExpect(jsonPath("$.characterNationality").value("french"));
+        mockMvc.perform(post("/worlds/" + worldA.getWorldId() + "/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createCharDto))).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").isNumber()).andExpect(jsonPath("$.characterName").value("test2")).andExpect(jsonPath("$.characterSpecies").value("human")).andExpect(jsonPath("$.age").value(22)).andExpect(jsonPath("$.characterDescription").value("test char")).andExpect(jsonPath("$.characterNationality").value("french")).andExpect(jsonPath("$.worldId").value(worldA.getWorldId())).andExpect(jsonPath("$.world").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist());
     }
 
     @Test
-    @WithMockUser(username = "userB" , roles = "USER")
+    @WithMockUser(username = "userB", roles = "USER")
     void authenticated_User_AddingCharacterTo_SomeoneElsesWorld_ShouldReturn404() throws Exception {
-        mockMvc.perform(post("/worlds/"+worldA.getWorldId()+"/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createCharDto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/"+worldA.getWorldId()+"/characters")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        mockMvc.perform(post("/worlds/" + worldA.getWorldId() + "/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createCharDto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/" + worldA.getWorldId() + "/characters")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
-
     @Test
-    @WithMockUser(username = "userA" , roles = "USER")
+    @WithMockUser(username = "userA", roles = "USER")
     void authenticated_User_AddingLocationTo_TheirWorld_ShouldReturn200() throws Exception {
-        mockMvc.perform(post("/worlds/"+worldA.getWorldId()+"/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createLocationDto))).andExpect(status().isOk()).andExpect(jsonPath("$.locationName").value("test2")).andExpect(jsonPath("$.locationDescription").value("test location")).andExpect(jsonPath("$.locationType").value("CITY"));
+        mockMvc.perform(post("/worlds/" + worldA.getWorldId() + "/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createLocationDto))).andExpect(status().isOk()).andExpect(jsonPath("$.locationId").isNumber()).andExpect(jsonPath("$.locationName").value("test2")).andExpect(jsonPath("$.locationDesc").value("test location")).andExpect(jsonPath("$.locationType").value("CITY")).andExpect(jsonPath("$.worldId").value(worldA.getWorldId())).andExpect(jsonPath("$.world").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist());
     }
 
     @Test
-    @WithMockUser(username = "userB" , roles = "USER")
+    @WithMockUser(username = "userB", roles = "USER")
     void authenticated_User_AddingLocationTo_SomeoneElsesWorld_ShouldReturn404() throws Exception {
-        mockMvc.perform(post("/worlds/"+worldA.getWorldId()+"/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createLocationDto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/"+worldA.getWorldId()+"/locations")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        mockMvc.perform(post("/worlds/" + worldA.getWorldId() + "/locations").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(createLocationDto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/worlds/" + worldA.getWorldId() + "/locations")).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
     @Test
-    @WithMockUser(username = "userA" , roles = "USER")
+    @WithMockUser(username = "userA", roles = "USER")
     void authenticated_User_ModifyingTheirLocation_ShouldReturn200() throws Exception {
-        mockMvc.perform(put("/locations/"+locationA.getId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateLocationDto))).andExpect(status().isOk()).andExpect(jsonPath("$.locationName").value("NewLocation")).andExpect(jsonPath("$.locationDescription").value("New description")).andExpect(jsonPath("$.locationType").value("LANDMARK"));
+        mockMvc.perform(put("/locations/" + locationA.getId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateLocationDto))).andExpect(status().isOk()).andExpect(jsonPath("$.locationId").value(locationA.getId())).andExpect(jsonPath("$.locationName").value("NewLocation")).andExpect(jsonPath("$.locationDesc").value("New description")).andExpect(jsonPath("$.locationType").value("LANDMARK")).andExpect(jsonPath("$.worldId").value(worldA.getWorldId())).andExpect(jsonPath("$.world").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist());
     }
 
     @Test
-    @WithMockUser(username = "userB" , roles = "USER")
+    @WithMockUser(username = "userB", roles = "USER")
     void authenticated_User_ModifyingSomeoneElsesLocation_ShouldReturn404() throws Exception {
-        mockMvc.perform(put("/locations/"+locationA.getId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateLocationDto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/locations/" + locationA.getId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        mockMvc.perform(put("/locations/" + locationA.getId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateLocationDto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/locations/" + locationA.getId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
     @Test
-    @WithMockUser(username = "userA" , roles = "USER")
+    @WithMockUser(username = "userA", roles = "USER")
     void authenticated_User_ModifyingTheirCharacter_ShouldReturn200() throws Exception {
-        mockMvc.perform(put("/characters/"+characterA.getCharacterId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateCharDto))).andExpect(status().isOk()).andExpect(jsonPath("$.characterName").value("NewName")).andExpect(jsonPath("$.characterSpecies").value("genii")).andExpect(jsonPath("$.age").value(23)).andExpect(jsonPath("$.characterDescription").value("New description")).andExpect(jsonPath("$.characterNationality").value("british"));
+        mockMvc.perform(put("/characters/" + characterA.getCharacterId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateCharDto))).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(characterA.getCharacterId())).andExpect(jsonPath("$.characterName").value("NewName")).andExpect(jsonPath("$.characterSpecies").value("genii")).andExpect(jsonPath("$.age").value(23)).andExpect(jsonPath("$.characterDescription").value("New description")).andExpect(jsonPath("$.characterNationality").value("british")).andExpect(jsonPath("$.worldId").value(worldA.getWorldId())).andExpect(jsonPath("$.world").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist());
     }
 
     @Test
-    @WithMockUser(username = "userB" , roles = "USER")
+    @WithMockUser(username = "userB", roles = "USER")
     void authenticated_User_ModifyingSomeoneElsesCharacter_ShouldReturn404() throws Exception {
-        mockMvc.perform(put("/characters/"+characterA.getCharacterId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateCharDto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/characters/" + characterA.getCharacterId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        mockMvc.perform(put("/characters/" + characterA.getCharacterId()).with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(updateCharDto))).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/characters/" + characterA.getCharacterId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
     @Test
-    @WithMockUser(username = "userA" , roles = "USER")
+    @WithMockUser(username = "userA", roles = "USER")
     void authenticated_User_DeletingTheirCharacter_ShouldReturn200() throws Exception {
-        mockMvc.perform(delete("/characters/"+characterA.getCharacterId()).with(csrf())).andExpect(status().isOk());
+        mockMvc.perform(delete("/characters/" + characterA.getCharacterId()).with(csrf())).andExpect(status().isOk());
     }
 
     @Test
-    @WithMockUser(username = "userB" , roles = "USER")
+    @WithMockUser(username = "userB", roles = "USER")
     void authenticated_User_DeletingSomeoneElsesCharacter_ShouldReturn404() throws Exception {
-        mockMvc.perform(delete("/characters/"+characterA.getCharacterId()).with(csrf())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/characters/" + characterA.getCharacterId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        mockMvc.perform(delete("/characters/" + characterA.getCharacterId()).with(csrf())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/characters/" + characterA.getCharacterId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
     @Test
-    @WithMockUser(username = "userA" , roles = "USER")
+    @WithMockUser(username = "userA", roles = "USER")
     void authenticated_User_DeletingTheirLocation_ShouldReturn200() throws Exception {
-        mockMvc.perform(delete("/locations/"+locationA.getId()).with(csrf())).andExpect(status().isOk());
+        mockMvc.perform(delete("/locations/" + locationA.getId()).with(csrf())).andExpect(status().isOk());
     }
 
     @Test
-    @WithMockUser(username = "userB" , roles = "USER")
+    @WithMockUser(username = "userB", roles = "USER")
     void authenticated_User_DeletingSomeoneElsesLocation_ShouldReturn404() throws Exception {
-        mockMvc.perform(delete("/locations/"+locationA.getId()).with(csrf())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/locations/" + locationA.getId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
+        mockMvc.perform(delete("/locations/" + locationA.getId()).with(csrf())).andExpect(status().isNotFound()).andExpect(jsonPath("$.errorCode").value(404)).andExpect(jsonPath("$.statusText").value("Not Found")).andExpect(jsonPath("$.apiPath").value("uri=/locations/" + locationA.getId())).andExpect(jsonPath("$.errorMessage").isNotEmpty()).andExpect(jsonPath("$.errorTime").isNotEmpty());
     }
 
-
-
-
     @Test
-    @WithMockUser(username ="userA" , roles = "USER")
+    @WithMockUser(username = "userA", roles = "USER")
     void authenticated_User_DeletingTheirWorld_ShouldRemoveAllCharactersAndLocations() throws Exception {
-        mockMvc.perform(delete("/worlds/"+worldA.getWorldId()).with(csrf())).andExpect(status().isOk());
+        mockMvc.perform(delete("/worlds/" + worldA.getWorldId()).with(csrf())).andExpect(status().isOk());
         assertFalse(worldRepository.existsById(worldA.getWorldId()));
         assertFalse(characterRepository.existsById(characterA.getCharacterId()));
         assertFalse(locationRepository.existsById(locationA.getId()));

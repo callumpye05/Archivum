@@ -28,14 +28,8 @@ export default function App() {
   const match = hash.match(/^#\/worlds\/(\d+)$/);
   const register = hash === "#/register";
   const pageTitle = match ? "World overview" : "Worlds";
-  if (auth.status === "loading") {
-    return (
-      <main className="entry-card">
-        <p role="status">Checking your session…</p>
-      </main>
-    );
-  }
-  //EmailService sends a real path and query string
+  // Verification is public and must not wait for the session check.
+  // EmailService sends a real path and query string.
   if (window.location.pathname === "/verify-email") {
     return (
       <AuthLanding
@@ -47,8 +41,15 @@ export default function App() {
       />
     );
   }
-  if (auth.status === "error"){
-    return(
+  if (auth.status === "loading") {
+    return (
+      <main className="entry-card">
+        <p role="status">Checking your session…</p>
+      </main>
+    );
+  }
+  if (auth.status === "error") {
+    return (
       <main className="entry-card">
         <p role="alert">
           Could not check your session. Check your connection and try again.
@@ -59,12 +60,13 @@ export default function App() {
       </main>
     );
   }
-  if(auth.status === "guest") {
+  if (auth.status === "guest") {
     return (
       <AuthLanding
         register={register}
         login={auth.login}
         signedOut={auth.signedOut}
+        sessionExpired={auth.sessionExpired}
       />
     );
   }
@@ -78,7 +80,7 @@ export default function App() {
           document.getElementById("main-content")?.focus();
         }}
       >
-          Skip to content
+        Skip to content
       </a>
       <aside className="sidebar">
         <a href="#/" className="brand">
@@ -107,6 +109,7 @@ export default function App() {
           </span>
           <AccountMenu
             username={auth.username!}
+            email={auth.email!}
             onSave={auth.saveAccount}
             signingOut={loggingOut}
             signOutError={logoutError}
@@ -118,11 +121,11 @@ export default function App() {
                 await auth.logout();
                 window.history.replaceState(null, "", "#/login");
                 setHash("#/login");
-              }catch {
+              } catch {
                 setLogoutError(
                   "Could not sign out. Check your connection and try again.",
                 );
-              }finally {
+              } finally {
                 setLoggingOut(false);
               }
             }}

@@ -39,9 +39,26 @@ export function WorldDetailPage({ id }: { id: number }) {
     id: number;
   } | null>(null);
   const [notice, setNotice] = useState("");
-  if (world.loading) return <Loading />;
-  if (world.error || !world.data)
-    return <ErrorState message={world.error} retry={world.reload} />;
+  if (world.loading || world.error || !world.data)
+    return (
+      <>
+        <a className="back" href="#/">
+          ← All worlds
+        </a>
+        {world.loading ? (
+          <Loading />
+        ) : (
+          <ErrorState
+            message={
+              world.errorStatus === 404
+                ? "This world is no longer available or you do not have access to it. Return to your worlds to choose another."
+                : world.error || "This world could not be loaded."
+            }
+            retry={world.reload}
+          />
+        )}
+      </>
+    );
   const selectedWorld = world.data;
   const resource = tab === "characters" ? characters : locations;
   const initial: Record<string, string | number | null> =

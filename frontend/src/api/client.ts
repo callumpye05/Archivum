@@ -14,6 +14,14 @@ export class ApiError extends Error {
     this.name = "ApiError";
   }
 }
+export class UnconfirmedWriteError extends Error {
+  constructor() {
+    super(
+      "Could not confirm whether your changes were saved. Check your connection and refresh the collection before retrying to avoid creating a duplicate.",
+    );
+    this.name = "UnconfirmedWriteError";
+  }
+}
 // Cookies belong to the browser. This counter only ignores responses from an
 // earlier session; no password or session identifier is kept in JavaScript.
 let authRevision = 0;
@@ -46,9 +54,10 @@ export async function signOut() {
   cancelSessionRequests();
 }
 
-export async function updateCurrentUser(data: UpdateUserDto): Promise<string> {
-  const user = await request<RegisteredUser>("/users/me", "PUT", data);
-  return user.userName;
+export async function updateCurrentUser(
+  data: UpdateUserDto,
+): Promise<RegisteredUser> {
+  return request<RegisteredUser>("/users/me", "PUT", data);
 }
 
 interface CsrfToken {
@@ -62,11 +71,20 @@ export async function request<T>(
   body?: unknown,
 ): Promise<T> {
   const revision = authRevision;
+  const isWrite = !["GET", "HEAD", "OPTIONS"].includes(method);
   const headers: Record<string, string> = { Accept: "application/json" };
   // Fetch before every write. This also picks up tokens replaced by login,
   // logout, an expired session, or another tab, without a token cache.
-  if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
+  if (isWrite) {
     const csrf = await request<CsrfToken>("/auth/csrf");
+    if (
+      !csrf ||
+      typeof csrf.headerName !== "string" ||
+      !csrf.headerName.trim() ||
+      typeof csrf.token !== "string" ||
+      !csrf.token.trim()
+    )
+      throw new Error("Could not prepare a secure request. Please try again.");
     headers[csrf.headerName] = csrf.token;
   }
   if (revision !== authRevision && !path.startsWith("/auth/")) {
@@ -98,6 +116,9 @@ export async function request<T>(
     });
     text = await response.text();
   } catch {
+    if (revision !== authRevision && !path.startsWith("/auth/"))
+      throw new Error("Your session changed. Please try again.");
+    if (isWrite) throw new UnconfirmedWriteError();
     throw new Error(
       "Could not reach Archivum. Check your connection and try again.",
     );
@@ -113,16 +134,28 @@ export async function request<T>(
       cancelSessionRequests();
       unauthorizedListeners.forEach((listener) => listener());
     }
-    let message = text;
+    const fallback =
+      response.status === 401
+        ? "Your sign-in is no longer valid. Log in again."
+        : response.status === 403
+          ? "This request was not allowed. Your security token may have expired. Try again, or sign in again if the problem continues."
+          : response.status === 404
+            ? "This entry is no longer available or you do not have access to it."
+            : `Request failed (${response.status}). Please try again.`;
+    let message = fallback;
     let code: string | undefined;
     try {
       const error = JSON.parse(text);
-      if (typeof error.code === "string") code = error.code;
+      if (typeof error?.code === "string") code = error.code;
       message =
-        error.detail || error.message || error.error || response.statusText;
+        [error?.errorMessage, error?.detail, error?.message, error?.error].find(
+          (value) => typeof value === "string" && value.trim(),
+        ) || fallback;
     } catch {
-      /* Spring also returns plain text errors. */
+      // Preserve legacy plain text, but never show a proxy's HTML error page.
+      if (text.trim() && !text.includes("<")) message = text;
     }
+    if (response.status === 403) message = fallback;
     if (response.status >= 500)
       message =
         method === "DELETE"
@@ -136,5 +169,15 @@ export async function request<T>(
       code,
     );
   }
-  return text ? (JSON.parse(text) as T) : (undefined as T);
+  if (revision !== authRevision && !path.startsWith("/auth/"))
+    throw new Error("Your session changed. Please try again.");
+  if (!text) return undefined as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    if (isWrite) throw new UnconfirmedWriteError();
+    throw new Error(
+      "Archivum returned an unexpected response. Please try again.",
+    );
+  }
 }

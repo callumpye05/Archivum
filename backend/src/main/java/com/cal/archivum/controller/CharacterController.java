@@ -1,5 +1,6 @@
 package com.cal.archivum.controller;
 
+import com.cal.archivum.dto.impl.CharacterResponseDto;
 import com.cal.archivum.dto.impl.CreateCharacterDto;
 import com.cal.archivum.dto.impl.UpdateCharacterDto;
 import com.cal.archivum.entity.WorldCharacter;
@@ -19,30 +20,30 @@ public class CharacterController {
     }
 
     @GetMapping("/worlds/{worldId}/characters")
-    public List<WorldCharacter> getAllCharactersFromWorld(@PathVariable Long worldId) {
+    public List<CharacterResponseDto> getAllCharactersFromWorld(@PathVariable Long worldId) {
         return  characterService.getAllCharactersFromWorld(worldId);
 
     }
 
     @GetMapping("/characters/{characterId}")
-    public WorldCharacter getCharacter(@PathVariable Long characterId) {
+    public CharacterResponseDto getCharacter(@PathVariable Long characterId) {
         return characterService.getCharacter(characterId);
     }
 
 
     @GetMapping("/worlds/{worldId}/characters/{characterId}")
-    public WorldCharacter getCharacterByWorld(@PathVariable Long  worldId , @PathVariable Long characterId) {
+    public CharacterResponseDto getCharacterByWorld(@PathVariable Long  worldId , @PathVariable Long characterId) {
         return characterService.getCharacterByWorldId(worldId , characterId);
     }
 
 
     @PostMapping ("/worlds/{worldId}/characters")
-    public WorldCharacter createCharacter(@PathVariable Long worldId, @Valid @RequestBody CreateCharacterDto dto) {
+    public CharacterResponseDto createCharacter(@PathVariable Long worldId, @Valid @RequestBody CreateCharacterDto dto) {
         return characterService.createCharacter(dto, worldId);
     }
 
     @PutMapping("/characters/{characterId}")
-    public WorldCharacter updateCharacter(@PathVariable Long characterId,  @Valid @RequestBody UpdateCharacterDto dto) {
+    public CharacterResponseDto updateCharacter(@PathVariable Long characterId,  @Valid @RequestBody UpdateCharacterDto dto) {
         return characterService.updateCharacter(characterId , dto);
     }
 

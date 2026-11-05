@@ -3,6 +3,7 @@ package com.cal.archivum.service.impl;
 import com.cal.archivum.dto.WorldDto;
 import com.cal.archivum.dto.impl.CreateWorldDto;
 import com.cal.archivum.dto.impl.UpdateWorldDto;
+import com.cal.archivum.dto.impl.WorldResponseDto;
 import com.cal.archivum.entity.User;
 import com.cal.archivum.entity.World;
 import com.cal.archivum.exception.WorldNotFound;
@@ -33,27 +34,25 @@ public class WorldService implements IWorldService {
     }
 
     @Override
-    public World createWorld(CreateWorldDto dto) {
+    public WorldResponseDto createWorld(CreateWorldDto dto) {
         World world = transformFromDto(dto);
         world.setOwner(userService.getCurrentUser());
-
-        return worldRepo.save(world);
+        World savedWorld = worldRepo.save(world);
+        return toDto(savedWorld);
     }
 
     @Override
-    public World updateWorld(Long id, UpdateWorldDto dto) {
+    public WorldResponseDto updateWorld(Long id, UpdateWorldDto dto) {
         User currentUser = userService.getCurrentUser();
-
         World  existingWorld = worldRepo.findByWorldIdAndOwner(id, currentUser).orElseThrow(() -> new WorldNotFound(id));
-
-
         if(dto.worldDesc() != null) {
             existingWorld.setWorldDesc(dto.worldDesc());
         }
         if(dto.worldName() != null) {
             existingWorld.setWorldName(dto.worldName());
         }
-        return worldRepo.save(existingWorld);
+        World Updatedworld =  worldRepo.save(existingWorld);
+        return toDto (Updatedworld);
     }
     @Transactional
     @Override
@@ -71,16 +70,18 @@ public class WorldService implements IWorldService {
 
 
     @Override
-    public List<World> getAllWorlds() {
+    public List<WorldResponseDto> getAllWorlds() {
         User currentUser = userService.getCurrentUser();
-        return worldRepo.findAllByOwner(currentUser);
+        return worldRepo.findAllByOwner(currentUser).stream().map(this::toDto).toList();
+
     }
 
     @Override
-    public World getWorld(Long id) {
+    public WorldResponseDto getWorld(Long id) {
 
         User currentUser = userService.getCurrentUser();
-        return worldRepo.findByWorldIdAndOwner(id, currentUser).orElseThrow(() -> new WorldNotFound(id));
+        World world = worldRepo.findByWorldIdAndOwner(id, currentUser).orElseThrow(() -> new WorldNotFound(id));
+        return toDto(world);
     }
 
 
@@ -94,5 +95,9 @@ public class WorldService implements IWorldService {
         world.setWorldDesc(dto.worldDesc());
         world.setWorldName(dto.worldName());
         return world;
+    }
+    @Override
+    public WorldResponseDto toDto(World world) {
+        return new WorldResponseDto(world.getWorldId() , world.getWorldName() , world.getWorldDesc());
     }
 }

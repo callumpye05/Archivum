@@ -1,9 +1,8 @@
 package com.cal.archivum.controller;
 
+import com.cal.archivum.dto.impl.CharacterResponseDto;
 import com.cal.archivum.dto.impl.CreateCharacterDto;
 import com.cal.archivum.dto.impl.UpdateCharacterDto;
-import com.cal.archivum.entity.World;
-import com.cal.archivum.entity.WorldCharacter;
 import com.cal.archivum.exception.CharacterNotFound;
 import com.cal.archivum.exception.CharacterNotFoundByWorld;
 import com.cal.archivum.exception.WorldNotFound;
@@ -37,10 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(CharacterController.class)
 @Import(ArchivumSecurityConfig.class)
-@WithMockUser(
-        username = "test_user",
-        roles = "USER"
-)
+@WithMockUser(username = "test_user", roles = "USER")
 class CharacterControllerTest {
 
     @Autowired
@@ -55,26 +51,11 @@ class CharacterControllerTest {
     @MockitoBean
     private UserDetailsService userDetailsService;
 
-    private World testWorld;
-    private WorldCharacter testCharacter;
-
+    private CharacterResponseDto testCharacter;
 
     @BeforeEach
     void setUp() {
-
-        testWorld = new World();
-        testWorld.setWorldId(2L);
-        testWorld.setWorldName("Eisenmark");
-        testWorld.setWorldDesc("Industrial world");
-
-        testCharacter = new WorldCharacter();
-        testCharacter.setCharacterId(10L);
-        testCharacter.setCharacterName("Lucian Varek");
-        testCharacter.setCharacterSpecies("Human");
-        testCharacter.setAge(34);
-        testCharacter.setCharacterDescription("Test character");
-        testCharacter.setCharacterNationality("Eisenmarkian");
-        testCharacter.setWorld(testWorld);
+        testCharacter=new CharacterResponseDto(10L, "Lucian Varek", "Human", 34, "Test character", "Eisenmarkian", 2L);
     }
 
 
@@ -97,7 +78,7 @@ class CharacterControllerTest {
     @Test
     void getCharacter_shouldReturn200_whenCharacterExists() throws Exception {
         when(characterService.getCharacter(10L)).thenReturn(testCharacter);
-        mockMvc.perform(get("/characters/10")).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Varek")).andExpect(jsonPath("$.characterSpecies").value("Human")).andExpect(jsonPath("$.age").value(34)).andExpect(jsonPath("$.characterDescription").value("Test character")).andExpect(jsonPath("$.characterNationality").value("Eisenmarkian"));
+        mockMvc.perform(get("/characters/10")).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Varek")).andExpect(jsonPath("$.characterSpecies").value("Human")).andExpect(jsonPath("$.age").value(34)).andExpect(jsonPath("$.characterDescription").value("Test character")).andExpect(jsonPath("$.characterNationality").value("Eisenmarkian")).andExpect(jsonPath("$.worldId").value(2L)).andExpect(jsonPath("$.world").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist()).andExpect(jsonPath("$..owner").doesNotExist());
         verify(characterService).getCharacter(10L);
     }
 
@@ -116,7 +97,7 @@ class CharacterControllerTest {
     @Test
     void getAllCharactersFromWorld_shouldReturn200_whenWorldExists() throws Exception {
         when(characterService.getAllCharactersFromWorld(2L)).thenReturn(List.of(testCharacter));
-        mockMvc.perform(get("/worlds/2/characters")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].characterId").value(10L)).andExpect(jsonPath("$[0].characterName").value("Lucian Varek"));
+        mockMvc.perform(get("/worlds/2/characters")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].characterId").value(10L)).andExpect(jsonPath("$[0].characterName").value("Lucian Varek")).andExpect(jsonPath("$[0].worldId").value(2L)).andExpect(jsonPath("$[0].world").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist()).andExpect(jsonPath("$..owner").doesNotExist());
         verify(characterService).getAllCharactersFromWorld(2L);
     }
 
@@ -142,7 +123,7 @@ class CharacterControllerTest {
     @Test
     void getCharacterByWorld_shouldReturn200_whenCharacterBelongsToWorld() throws Exception {
         when(characterService.getCharacterByWorldId(2L, 10L)).thenReturn(testCharacter);
-        mockMvc.perform(get("/worlds/2/characters/10")).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Varek")).andExpect(jsonPath("$.characterSpecies").value("Human"));
+        mockMvc.perform(get("/worlds/2/characters/10")).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Varek")).andExpect(jsonPath("$.characterSpecies").value("Human")).andExpect(jsonPath("$.worldId").value(2L)).andExpect(jsonPath("$.world").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist()).andExpect(jsonPath("$..owner").doesNotExist());
         verify(characterService).getCharacterByWorldId(2L, 10L);
     }
 
@@ -162,7 +143,7 @@ class CharacterControllerTest {
     void createCharacter_shouldReturn200_whenRequestIsValid() throws Exception {
         CreateCharacterDto dto=new CreateCharacterDto("Lucian Varek", "Human", 34, "Test character", "Eisenmarkian");
         when(characterService.createCharacter(any(CreateCharacterDto.class), eq(2L))).thenReturn(testCharacter);
-        mockMvc.perform(post("/worlds/2/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Varek")).andExpect(jsonPath("$.characterSpecies").value("Human")).andExpect(jsonPath("$.age").value(34));
+        mockMvc.perform(post("/worlds/2/characters").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Varek")).andExpect(jsonPath("$.characterSpecies").value("Human")).andExpect(jsonPath("$.age").value(34)).andExpect(jsonPath("$.worldId").value(2L)).andExpect(jsonPath("$.world").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist()).andExpect(jsonPath("$..owner").doesNotExist());
         verify(characterService).createCharacter(any(CreateCharacterDto.class), eq(2L));
     }
 
@@ -225,16 +206,9 @@ class CharacterControllerTest {
     @Test
     void updateCharacter_shouldReturn200_whenRequestIsValid() throws Exception {
         UpdateCharacterDto dto=new UpdateCharacterDto("Lucian Updated", "Human", 35, "Updated description", "Eisenmarkian");
-        WorldCharacter updated=new WorldCharacter();
-        updated.setCharacterId(10L);
-        updated.setCharacterName("Lucian Updated");
-        updated.setCharacterSpecies("Human");
-        updated.setAge(35);
-        updated.setCharacterDescription("Updated description");
-        updated.setCharacterNationality("Eisenmarkian");
-        updated.setWorld(testWorld);
+        CharacterResponseDto updated=new CharacterResponseDto(10L, "Lucian Updated", "Human", 35, "Updated description", "Eisenmarkian", 2L);
         when(characterService.updateCharacter(eq(10L), any(UpdateCharacterDto.class))).thenReturn(updated);
-        mockMvc.perform(put("/characters/10").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Updated")).andExpect(jsonPath("$.characterSpecies").value("Human")).andExpect(jsonPath("$.age").value(35)).andExpect(jsonPath("$.characterDescription").value("Updated description"));
+        mockMvc.perform(put("/characters/10").with(csrf()).contentType("application/json").content(objectMapper.writeValueAsString(dto))).andExpect(status().isOk()).andExpect(jsonPath("$.characterId").value(10L)).andExpect(jsonPath("$.characterName").value("Lucian Updated")).andExpect(jsonPath("$.characterSpecies").value("Human")).andExpect(jsonPath("$.age").value(35)).andExpect(jsonPath("$.characterDescription").value("Updated description")).andExpect(jsonPath("$.worldId").value(2L)).andExpect(jsonPath("$.world").doesNotExist()).andExpect(jsonPath("$..userHashedPassword").doesNotExist()).andExpect(jsonPath("$..owner").doesNotExist());
         verify(characterService).updateCharacter(eq(10L), any(UpdateCharacterDto.class));
     }
 

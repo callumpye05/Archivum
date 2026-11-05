@@ -36,6 +36,42 @@ function fill() {
   field("email").value = "archivist@example.com";
   field("password").value = "test-only-password";
 }
+
+it("explains an uncertain registration outcome without replaying or retaining the password", async () => {
+  const fetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+  stubFetch(fetch);
+  fill();
+  await submit();
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+    "Check your inbox",
+  );
+  expect(field("password").value).toBe("");
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it.each([
+  ["This email is used", "This email is already registered"],
+  ["Username is already used", "This username is already taken"],
+])("maps the backend conflict envelope: %s", async (errorMessage, expected) => {
+  stubFetch(
+    vi.fn().mockResolvedValue(
+      Response.json(
+        {
+          apiPath: "uri=/auth/register",
+          statusText: "Conflict",
+          errorCode: 409,
+          errorMessage,
+          errorTime: "2026-11-03T12:00:00",
+        },
+        { status: 409 },
+      ),
+    ),
+  );
+  fill();
+  await submit();
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain(expected);
+  expect(field("password").value).toBe("");
+});
 async function submit() {
   await act(async () => {
     host

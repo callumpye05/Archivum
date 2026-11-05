@@ -1,6 +1,7 @@
 package com.cal.archivum.service.impl;
 
 import com.cal.archivum.dto.CharacterDto;
+import com.cal.archivum.dto.impl.CharacterResponseDto;
 import com.cal.archivum.dto.impl.CreateCharacterDto;
 import com.cal.archivum.dto.impl.UpdateCharacterDto;
 import com.cal.archivum.entity.User;
@@ -31,36 +32,41 @@ public class CharacterService implements ICharacterService {
     }
 
     @Override
-    public List<WorldCharacter> getAllCharactersFromWorld(Long worldId) {
+    public List<CharacterResponseDto> getAllCharactersFromWorld(Long worldId) {
         User currentUser = userService.getCurrentUser();
         World world = worldRepo.findByWorldIdAndOwner(worldId , currentUser).orElseThrow(() -> new WorldNotFound(worldId));
-        return characterRepo.findAllByWorld(world);
+        return  characterRepo.findAllByWorld(world).stream().map(this::toDto).toList();
+
+
     }
 
     @Override
-    public WorldCharacter getCharacter(Long id) {
+    public CharacterResponseDto getCharacter(Long id) {
        User currentUser = userService.getCurrentUser();
-       return characterRepo.findByCharacterIdAndWorldOwner(id , currentUser).orElseThrow(() -> new CharacterNotFound(id));
+       WorldCharacter character = characterRepo.findByCharacterIdAndWorldOwner(id , currentUser).orElseThrow(() -> new CharacterNotFound(id));
+       return toDto(character);
     }
 
     @Override
-    public WorldCharacter getCharacterByWorldId(Long worldId, Long characterId) {
+    public CharacterResponseDto getCharacterByWorldId(Long worldId, Long characterId) {
         User currentUser = userService.getCurrentUser();
-        return characterRepo.findByCharacterIdAndWorldWorldIdAndWorldOwner(characterId, worldId , currentUser).orElseThrow(() -> new CharacterNotFoundByWorld(characterId , worldId));
+        WorldCharacter character =  characterRepo.findByCharacterIdAndWorldWorldIdAndWorldOwner(characterId, worldId , currentUser).orElseThrow(() -> new CharacterNotFoundByWorld(characterId , worldId));
+        return toDto(character);
     }
 
 
 
     @Override
-    public WorldCharacter createCharacter(CreateCharacterDto dto , Long worldId) {
+    public CharacterResponseDto createCharacter(CreateCharacterDto dto , Long worldId) {
         User currentUser = userService.getCurrentUser();
         World world = worldRepo.findByWorldIdAndOwner(worldId , currentUser).orElseThrow(()-> new WorldNotFound(worldId));
         WorldCharacter character = transformFromDto(dto,world);
-        return characterRepo.save(character);
+        WorldCharacter savedCharacter = characterRepo.save(character);
+        return toDto(savedCharacter);
     }
 
     @Override
-    public WorldCharacter updateCharacter(Long id, UpdateCharacterDto dto) {
+    public CharacterResponseDto updateCharacter(Long id, UpdateCharacterDto dto) {
         User currentUser = userService.getCurrentUser();
         WorldCharacter existingCharacter = characterRepo.findByCharacterIdAndWorldOwner(id , currentUser).orElseThrow(()-> new CharacterNotFound(id));
 
@@ -79,7 +85,8 @@ public class CharacterService implements ICharacterService {
         if(dto.characterNationality() != null) {
             existingCharacter.setCharacterNationality(dto.characterNationality());
         }
-        return characterRepo.save(existingCharacter);
+        WorldCharacter updatedCharacter =  characterRepo.save(existingCharacter);
+        return toDto(updatedCharacter);
     }
 
     @Override
@@ -102,5 +109,11 @@ public class CharacterService implements ICharacterService {
 
         return character;
 
+    }
+
+    @Override
+    public CharacterResponseDto toDto(WorldCharacter character) {
+        World world = character.getWorld();
+        return new CharacterResponseDto(character.getCharacterId(),character.getCharacterName() , character.getCharacterSpecies() , character.getAge() , character.getCharacterDescription(), character.getCharacterNationality(), world.getWorldId());
     }
 }

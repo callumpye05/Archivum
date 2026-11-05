@@ -3,6 +3,7 @@ import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import App from "./App";
+import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { request } from "./api/client";
 
 let root: Root;
@@ -1135,4 +1136,218 @@ it("handles a lost verification response without claiming it failed on the serve
     "could not confirm your email verification",
   );
   expect(host.textContent).toContain("If it already succeeded");
+});
+
+it("verifies a public email link without waiting for a stalled session check", async () => {
+  const respond = apiFetch.getMockImplementation()!;
+  let finish!: (response: Response) => void;
+  apiFetch.mockImplementation((path, options) => {
+    if (path === "/api/users/me")
+      return new Promise<Response>((resolve) => {
+        finish = resolve;
+      });
+    if (path === "/api/auth/verify-email")
+      return Promise.resolve(new Response(null));
+    return respond(path, options);
+  });
+  window.history.replaceState(
+    null,
+    "",
+    "/verify-email?token=" + "a".repeat(64),
+  );
+  await render();
+  expect(host.textContent).toContain("Your email has been verified");
+  await act(async () => finish(new Response(null, { status: 401 })));
+  expect(host.textContent).toContain("Your email has been verified");
+});
+
+it("describes a lost login response in terms of sign-in and clears the password", async () => {
+  await render();
+  apiFetch.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+  await login();
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+    "Could not confirm your sign-in",
+  );
+  expect(host.querySelector<HTMLInputElement>("#login-password")!.value).toBe(
+    "",
+  );
+});
+
+it("uses the returned email after an account update", async () => {
+  await renderSignedIn();
+  await openAccount();
+  await input("account-email", "new@example.com");
+  apiFetch.mockResolvedValueOnce(
+    Response.json({ userName: "Archivist", email: "new@example.com" }),
+  );
+  await submit();
+  expect(host.textContent).toContain("Current email: new@example.com");
+  expect(host.querySelector<HTMLInputElement>("#account-email")!.value).toBe(
+    "",
+  );
+});
+
+it.each([
+  ["/", "＋ Create world", "worldName"],
+  ["/worlds/7", "＋ Create character", "characterName"],
+  ["/worlds/7", "＋ Create character", "characterSpecies"],
+  ["/worlds/7", "＋ Create location", "locationName"],
+])(
+  "blocks blank %s / %s / %s and focuses an accessible field error",
+  async (route, button, field) => {
+    await renderSignedIn(route);
+    if (field === "locationName") await click("Locations 1");
+    await click(button);
+    if (field === "characterSpecies") await input("characterName", "Person");
+    await input(field, "   ");
+    const count = calls.length;
+    await submit();
+    expect(calls).toHaveLength(count);
+    const invalid = host.querySelector<HTMLInputElement>(`#${field}`)!;
+    expect(invalid.getAttribute("aria-invalid")).toBe("true");
+    expect(invalid.getAttribute("aria-describedby")).toContain(
+      `${field}-error`,
+    );
+    expect(document.activeElement).toBe(invalid);
+    expect(host.querySelector(`#${field}-error`)?.textContent).toContain(
+      "required",
+    );
+  },
+);
+
+it.each(["-1", "1.5", "2147483648"])(
+  "rejects invalid age %s in the submit handler",
+  async (age) => {
+    await renderSignedIn("/worlds/7");
+    await click("＋ Create character");
+    await input("characterName", "Person");
+    await input("characterSpecies", "Human");
+    await input("age", age);
+    const count = calls.length;
+    await submit();
+    expect(calls).toHaveLength(count);
+    expect(host.querySelector("#age-error")?.textContent).toContain(
+      "whole number",
+    );
+  },
+);
+
+it("preserves input and shows backend validation before a successful correction", async () => {
+  await renderSignedIn();
+  await click("＋ Create world");
+  await input("worldName", "Existing name");
+  apiFetch.mockResolvedValueOnce(
+    Response.json(
+      { errorMessage: "World name cannot be blank" },
+      { status: 400 },
+    ),
+  );
+  await submit();
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+    "World name cannot be blank",
+  );
+  expect(host.querySelector<HTMLInputElement>("#worldName")!.value).toBe(
+    "Existing name",
+  );
+  await input("worldName", "Corrected");
+  await submit();
+  expect(host.querySelector("dialog")).toBeNull();
+});
+
+it("explains uncertain save outcomes and keeps the draft open without automatically retrying", async () => {
+  await renderSignedIn();
+  await click("＋ Create world");
+  await input("worldName", "Draft");
+  const count = apiFetch.mock.calls.length;
+  apiFetch.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+  await submit();
+  expect(apiFetch.mock.calls.length).toBe(count + 1);
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+    "refresh the collection before retrying",
+  );
+  expect(host.querySelector<HTMLInputElement>("#worldName")!.value).toBe(
+    "Draft",
+  );
+});
+
+it("explains session expiry, clears private views and resumes the world after login", async () => {
+  await renderSignedIn("/worlds/7");
+  apiFetch.mockResolvedValueOnce(new Response(null, { status: 401 }));
+  await act(async () => {
+    await request("/worlds").catch(() => {});
+  });
+  expect(host.textContent).toContain("Your session expired");
+  expect(host.querySelector(".workspace")).toBeNull();
+  expect(window.location.hash).toBe("#/worlds/7");
+  await login();
+  expect(host.textContent).toContain("Test world");
+  expect(host.textContent).not.toContain("Your session expired");
+});
+
+it("keeps back navigation available while a world loads and after a missing-world response", async () => {
+  authenticated = true;
+  const respond = apiFetch.getMockImplementation()!;
+  let finish!: (response: Response) => void;
+  apiFetch.mockImplementation((path, options) =>
+    path === "/api/worlds/7"
+      ? new Promise<Response>((resolve) => {
+          finish = resolve;
+        })
+      : respond(path, options),
+  );
+  await render("/worlds/7");
+  expect(host.querySelector<HTMLAnchorElement>(".back")!.hash).toBe("#/");
+  expect(host.querySelector('[role="status"]')).toBeTruthy();
+  await act(async () =>
+    finish(Response.json({ errorMessage: "World not found" }, { status: 404 })),
+  );
+  expect(host.querySelector<HTMLAnchorElement>(".back")!.hash).toBe("#/");
+  expect(host.textContent).toContain(
+    "no longer available or you do not have access",
+  );
+});
+
+it("displays current email and does not send it as an unchanged update", async () => {
+  await renderSignedIn();
+  await openAccount();
+  expect(host.textContent).toContain("Current email: a@example.com");
+  await input("account-email", "a@example.com");
+  await submit();
+  expect(calls.some((call) => call.method === "PUT")).toBe(false);
+  expect(host.textContent).toContain("No changes to save");
+});
+
+it("retries verification explicitly and keys single-use requests by token in StrictMode", async () => {
+  const verify = vi
+    .fn()
+    .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+    .mockResolvedValue(new Response(null));
+  const respond = apiFetch.getMockImplementation()!;
+  apiFetch.mockImplementation((path, options) =>
+    path === "/api/auth/verify-email"
+      ? verify(options)
+      : respond(path, options),
+  );
+  await act(async () =>
+    root.render(
+      <StrictMode>
+        <VerifyEmailPage token={"a".repeat(64)} />
+      </StrictMode>,
+    ),
+  );
+  expect(verify).toHaveBeenCalledTimes(1);
+  await click("Try again");
+  expect(verify).toHaveBeenCalledTimes(2);
+  expect(host.textContent).toContain("Your email has been verified");
+  await act(async () =>
+    root.render(
+      <StrictMode>
+        <VerifyEmailPage token={"b".repeat(64)} />
+      </StrictMode>,
+    ),
+  );
+  expect(verify).toHaveBeenCalledTimes(3);
+  expect(JSON.parse(verify.mock.calls[2][0].body)).toEqual({
+    token: "b".repeat(64),
+  });
 });

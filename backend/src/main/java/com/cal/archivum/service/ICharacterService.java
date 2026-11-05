@@ -1,6 +1,7 @@
 package com.cal.archivum.service;
 
 import com.cal.archivum.dto.CharacterDto;
+import com.cal.archivum.dto.impl.CharacterResponseDto;
 import com.cal.archivum.dto.impl.CreateCharacterDto;
 import com.cal.archivum.dto.impl.UpdateCharacterDto;
 import com.cal.archivum.entity.World;
@@ -10,11 +11,12 @@ import java.util.List;
 
 public interface ICharacterService  {
 
-    List<WorldCharacter> getAllCharactersFromWorld(Long worldId);
-    WorldCharacter getCharacter(Long id);
-    WorldCharacter createCharacter(CreateCharacterDto dto , Long worldId);
-    WorldCharacter updateCharacter(Long id, UpdateCharacterDto dto);
+    List<CharacterResponseDto> getAllCharactersFromWorld(Long worldId);
+    CharacterResponseDto getCharacter(Long id);
+    CharacterResponseDto createCharacter(CreateCharacterDto dto , Long worldId);
+    CharacterResponseDto updateCharacter(Long id, UpdateCharacterDto dto);
     void deleteCharacter(Long id);
     WorldCharacter transformFromDto(CharacterDto dto , World world);
-    WorldCharacter getCharacterByWorldId(Long worldId , Long characterId);
+    CharacterResponseDto getCharacterByWorldId(Long worldId , Long characterId);
+    CharacterResponseDto toDto(WorldCharacter character);
 }
