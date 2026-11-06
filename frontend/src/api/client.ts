@@ -69,6 +69,7 @@ export async function request<T>(
   path: string,
   method = "GET",
   body?: unknown,
+  parse?: (value: unknown) => T,
 ): Promise<T> {
   const revision = authRevision;
   const isWrite = !["GET", "HEAD", "OPTIONS"].includes(method);
@@ -171,8 +172,9 @@ export async function request<T>(
   }
   if (revision !== authRevision && !path.startsWith("/auth/"))
     throw new Error("Your session changed. Please try again.");
-  if (!text) return undefined as T;
   try {
+    if (parse) return parse(text ? JSON.parse(text) : undefined);
+    if (!text) return undefined as T;
     return JSON.parse(text) as T;
   } catch {
     if (isWrite) throw new UnconfirmedWriteError();

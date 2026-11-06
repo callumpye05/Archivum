@@ -13,11 +13,11 @@ export interface RegisteredUser {
   userName: string;
   email: string;
 }
+// Public response DTOs. Related resources are identified by worldId only.
 export interface World {
   worldId: number;
   worldName: string;
   worldDesc: string | null;
-  createdAt: string | null;
 }
 export interface WorldCharacter {
   characterId: number;
@@ -26,8 +26,7 @@ export interface WorldCharacter {
   age: number;
   characterDescription: string | null;
   characterNationality: string | null;
-  createdAt: string;
-  world: World;
+  worldId: number;
 }
 export const locationTypes = [
   "CITY",
@@ -37,13 +36,15 @@ export const locationTypes = [
   "FACILITY",
 ] as const;
 export type LocationType = (typeof locationTypes)[number];
+export function isLocationType(value: unknown): value is LocationType {
+  return locationTypes.some((type) => type === value);
+}
 export interface Location {
-  id: number;
+  locationId: number;
   locationName: string;
   locationType: LocationType;
-  locationDescription: string | null;
-  createdAt: string;
-  world: World;
+  locationDesc: string | null;
+  worldId: number;
 }
 export interface CreateWorldDto {
   worldName: string;

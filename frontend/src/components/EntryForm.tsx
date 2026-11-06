@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { Modal } from "./Modal";
-import { locationTypes } from "../types";
+import { isLocationType, locationTypes } from "../types";
 export type Field = {
   name: string;
   label: string;
@@ -100,10 +100,7 @@ export function EntryForm({
           Number(value) > 2147483647)
       )
         errors[field.name] = "Enter a whole number from 0 to 2147483647.";
-      else if (
-        field.kind === "locationType" &&
-        !locationTypes.some((type) => type === value)
-      )
+      else if (field.kind === "locationType" && !isLocationType(value))
         errors[field.name] = "Choose a location type.";
     }
     setFieldErrors(errors);
@@ -111,9 +108,8 @@ export function EntryForm({
     const firstInvalid = fields.find((field) => errors[field.name]);
     if (firstInvalid) {
       setError("Check the highlighted fields before saving.");
-      (
-        event.currentTarget.elements.namedItem(firstInvalid.name) as HTMLElement
-      )?.focus();
+      const control = event.currentTarget.elements.namedItem(firstInvalid.name);
+      if (control instanceof HTMLElement) control.focus();
       return;
     }
     submitting.current = true;

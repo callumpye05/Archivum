@@ -7,6 +7,8 @@
   pointer-events: none;
 }
 .panorama {
+  /* Form height changes must not resize or recrop the shared background. */
+  position: fixed;
   background: #203e35;
   isolation: isolate;
 }
@@ -17,8 +19,8 @@
   transform: translateX(0.6%);
   z-index: 0;
   transition:
-    opacity 2800ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 2800ms cubic-bezier(0.4, 0, 0.2, 1);
+    opacity 3000ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 3000ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .panorama-scene.is-active {
   opacity: 1;
@@ -36,7 +38,7 @@
   object-fit: cover;
   object-position: center;
   transform: scale(1);
-  transition: transform 14800ms ease-in-out;
+  transition: transform 12000ms ease-in-out;
 }
 .panorama-scene.is-active img,
 .panorama-scene.is-outgoing img {

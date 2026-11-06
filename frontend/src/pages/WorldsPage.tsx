@@ -20,13 +20,18 @@ export function WorldsPage() {
           <h1>Your worlds</h1>
           <p>A home for the people, places, and stories you imagine.</p>
         </div>
-        <button
-          type="button"
-          className="primary"
-          onClick={() => setEditing("new")}
-        >
-          ＋ Create world
-        </button>
+        <div className="actions">
+          <button type="button" onClick={reload} disabled={loading}>
+            Refresh worlds
+          </button>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => setEditing("new")}
+          >
+            ＋ Create world
+          </button>
+        </div>
       </header>
       <FeedbackMessage message={notice} onDismiss={setNotice} />
       <div className="section-label">
@@ -66,9 +71,7 @@ export function WorldsPage() {
                   <span>✧</span>
                 </div>
                 <div className="card-body">
-                  <p className="eyebrow">
-                    WORLD / {String(world.worldId).padStart(2, "0")}
-                  </p>
+                  <p className="eyebrow">WORLD</p>
                   <h2>{world.worldName || "Untitled world"}</h2>
                   <p
                     className={`excerpt${world.worldDesc ? "" : " placeholder"}`}

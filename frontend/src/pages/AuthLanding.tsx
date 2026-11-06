@@ -37,6 +37,7 @@ export function AuthLanding({
 
   return (
     <div className={`auth-landing${register ? " is-register" : ""}`}>
+      {/* Keep this shared layout and its panorama mounted across auth routes. */}
       <PanoramaViewer entries={demoPanoramas} />
       <header className="auth-brand">
         <button

@@ -2,15 +2,17 @@ import { useCallback } from "react";
 import * as api from "../api";
 import { useResource } from "../hooks/useResource";
 import { Modal } from "./Modal";
-import { ErrorState, Loading, dateLabel } from "./States";
+import { ErrorState, Loading } from "./States";
 import type { WorldCharacter, Location } from "../types";
 export function EntryDetail({
   worldId,
+  worldName,
   id,
   kind,
   onClose,
 }: {
   worldId: number;
+  worldName: string;
   id: number;
   kind: "characters" | "locations";
   onClose: () => void;
@@ -40,12 +42,9 @@ export function EntryDetail({
         : [
             ["Name", data.locationName],
             ["Type", data.locationType],
-            ["Description", data.locationDescription],
+            ["Description", data.locationDesc],
           ];
-    fields.push(
-      ["World", data.world.worldName],
-      ["Created", dateLabel(data.createdAt)],
-    );
+    fields.push(["World", worldName]);
   }
   return (
     <Modal

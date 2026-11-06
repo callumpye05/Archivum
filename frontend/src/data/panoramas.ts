@@ -1,4 +1,3 @@
-import greenReach from "../assets/panoramas/green-reach.svg";
 import amberCoast from "../assets/panoramas/amber-coast.svg";
 import quietPeaks from "../assets/panoramas/quiet-peaks.svg";
 import lanternIsles from "../assets/panoramas/lantern-isles.svg";
@@ -20,15 +19,6 @@ export interface PanoramaEntry {
 // Frontend-only studies, with no invented world IDs or record counts.
 // Replace this array with mapped records when world imagery is available.
 export const demoPanoramas: PanoramaEntry[] = [
-  {
-    id: "green-reach",
-    title: "The Green Reach",
-    category: "WOODLAND",
-    description:
-      "Beyond the last road, rivers thread through ancient woodland. Somewhere beneath the canopy, a story is waiting to be found.",
-    image: greenReach,
-    isDemo: true,
-  },
   {
     id: "amber-coast",
     title: "The Amber Coast",

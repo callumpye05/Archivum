@@ -41,12 +41,3 @@ export function Empty({
     </div>
   );
 }
-export function dateLabel(date: string | null) {
-  return date
-    ? new Date(date).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "Date unavailable";
-}
