@@ -5,33 +5,11 @@ import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import App from "./App";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { request } from "./api/client";
+import { world, character, location } from "./test/fixtures";
+import type { World } from "./types";
 
 let root: Root;
 let host: HTMLDivElement;
-const world = {
-  worldId: 7,
-  worldName: "Test world",
-  worldDesc: "An isolated test fixture",
-  createdAt: "2026-01-01T00:00:00Z",
-};
-const character = {
-  characterId: 3,
-  characterName: "Test person",
-  characterSpecies: "Human",
-  age: 0,
-  characterNationality: "",
-  characterDescription: "A description",
-  createdAt: "2026-01-01T00:00:00Z",
-  world,
-};
-const location = {
-  id: 2,
-  locationName: "Test place",
-  locationType: "CITY",
-  locationDescription: "A place description",
-  createdAt: "2026-01-01T00:00:00Z",
-  world,
-};
 const calls: {
   path: string;
   method: string;
@@ -144,6 +122,13 @@ async function click(label: string, scope: ParentNode = host) {
   expect(button, `button ${label}`).toBeTruthy();
   await act(async () => button!.click());
 }
+async function clickLabel(label: string) {
+  const button = host.querySelector<HTMLButtonElement>(
+    `button[aria-label="${label}"]`,
+  );
+  expect(button, `button ${label}`).toBeTruthy();
+  await act(async () => button!.click());
+}
 async function input(id: string, value: string) {
   const field = host.querySelector<
     HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -186,6 +171,361 @@ async function openAccount() {
   );
   await click("Account", host.querySelector("#account-actions")!);
 }
+
+it("refreshes world cards after edits and deletion, then navigates to a newly created DTO", async () => {
+  const respond = apiFetch.getMockImplementation()!;
+  let saved: World | undefined = { ...world };
+  apiFetch.mockImplementation(async (path: string, options: RequestInit) => {
+    if (!path.startsWith("/api/worlds")) return respond(path, options);
+    const body: Record<string, string> = options.body
+      ? JSON.parse(String(options.body))
+      : {};
+    if (path === "/api/worlds") return Response.json(saved ? [saved] : []);
+    if (path === "/api/worlds/create") {
+      saved = {
+        worldId: 19,
+        worldName: body.worldName,
+        worldDesc: body.worldDesc,
+      };
+      return Response.json(saved);
+    }
+    if (path === "/api/worlds/7" || path === "/api/worlds/19") {
+      if (options.method === "DELETE") {
+        saved = undefined;
+        return new Response(null, { status: 204 });
+      }
+      if (options.method === "PUT" && saved)
+        saved = {
+          ...saved,
+          worldName: body.worldName,
+          worldDesc: body.worldDesc,
+        };
+      return Response.json(saved);
+    }
+    return respond(path, options);
+  });
+  await renderSignedIn();
+  await click("Edit");
+  await input("worldName", "Renamed world");
+  await submit();
+  expect(host.querySelector(".world-card h2")?.textContent).toBe(
+    "Renamed world",
+  );
+  expect(host.querySelector(".feedback")?.textContent).toContain(
+    "World updated.",
+  );
+  await click("Delete");
+  await click("Delete world");
+  expect(host.querySelector(".world-card")).toBeNull();
+  expect(host.textContent).toContain("Every story begins with a world");
+  expect(host.querySelector(".feedback")?.textContent).toContain(
+    "World deleted.",
+  );
+  await click("＋ Create world");
+  await input("worldName", "New archive");
+  await input("worldDesc", "New description");
+  await submit();
+  await act(async () =>
+    window.dispatchEvent(new HashChangeEvent("hashchange")),
+  );
+  expect(window.location.hash).toBe("#/worlds/19");
+  expect(host.querySelector("h1")?.textContent).toBe("New archive");
+  expect(host.querySelector(".description")?.textContent).toBe(
+    "New description",
+  );
+});
+
+it.each([
+  {
+    kind: "character",
+    tab: "characters",
+    fixture: character,
+    idKey: "characterId",
+    nameKey: "characterName",
+    descKey: "characterDescription",
+  },
+  {
+    kind: "location",
+    tab: "locations",
+    fixture: location,
+    idKey: "locationId",
+    nameKey: "locationName",
+    descKey: "locationDesc",
+  },
+])(
+  "refreshes $tab and counts after create, edit and delete using flat DTOs",
+  async ({ kind, tab, fixture, idKey, nameKey, descKey }) => {
+    const respond = apiFetch.getMockImplementation()!;
+    let records: Record<string, unknown>[] = [fixture];
+    apiFetch.mockImplementation(async (path: string, options: RequestInit) => {
+      if (path !== `/api/worlds/7/${tab}` && path !== `/api/${tab}/83`)
+        return respond(path, options);
+      const body: Record<string, unknown> = options.body
+        ? JSON.parse(String(options.body))
+        : {};
+      if (path === `/api/worlds/7/${tab}`) {
+        if (options.method === "POST") {
+          const created = { ...body, [idKey]: 83, worldId: 7 };
+          records.push(created);
+          return Response.json(created);
+        }
+        return Response.json(records);
+      }
+      if (path === `/api/${tab}/83`) {
+        if (options.method === "DELETE") {
+          records = records.filter((record) => record[idKey] !== 83);
+          return new Response(null, { status: 204 });
+        }
+        const updated = { ...body, [idKey]: 83, worldId: 7 };
+        records = records.map((record) =>
+          record[idKey] === 83 ? updated : record,
+        );
+        return Response.json(updated);
+      }
+      return respond(path, options);
+    });
+    await renderSignedIn("/worlds/7");
+    if (kind === "location") await click("Locations 1");
+    await click(`＋ Create ${kind}`);
+    await input(nameKey, "New record");
+    await input(descKey, "Created description");
+    if (kind === "character") {
+      await input("characterSpecies", "Human");
+      await input("age", "0");
+    }
+    await submit();
+    expect(host.querySelectorAll(".entry-grid article")).toHaveLength(2);
+    expect(
+      host.querySelector('.tabs [aria-current="page"]')?.textContent,
+    ).toContain("2");
+    expect(host.querySelector(".entry-grid")?.textContent).toContain(
+      "Created description",
+    );
+    expect(host.querySelector(".feedback")?.textContent).toContain("created.");
+    await clickLabel("Edit New record");
+    await input(descKey, "Edited description");
+    await submit();
+    expect(host.querySelector(".entry-grid")?.textContent).toContain(
+      "Edited description",
+    );
+    expect(host.querySelector(".entry-grid")?.textContent).not.toContain(
+      "Created description",
+    );
+    expect(host.querySelector(".feedback")?.textContent).toContain("updated.");
+    await clickLabel("Delete New record");
+    await click(`Delete ${kind}`);
+    expect(host.querySelectorAll(".entry-grid article")).toHaveLength(1);
+    expect(host.querySelector(".entry-grid")?.textContent).not.toContain(
+      "New record",
+    );
+    expect(
+      host.querySelector('.tabs [aria-current="page"]')?.textContent,
+    ).toContain("1");
+    expect(host.querySelector(".feedback")?.textContent).toContain("deleted.");
+  },
+);
+
+it.each(["characters", "locations"])(
+  "shows loading and empty %s and refreshes without changing worlds",
+  async (tab) => {
+    const respond = apiFetch.getMockImplementation()!;
+    let finish!: (response: Response) => void;
+    apiFetch.mockImplementation((path, options) =>
+      path === `/api/worlds/7/${tab}`
+        ? new Promise<Response>((resolve) => {
+            finish = resolve;
+          })
+        : respond(path, options),
+    );
+    await renderSignedIn("/worlds/7");
+    if (tab === "locations") await click("Locations —");
+    expect(host.textContent).toContain("Opening the archive");
+    const refresh = Array.from(host.querySelectorAll("button")).find(
+      (button) => button.textContent === `Refresh ${tab}`,
+    )!;
+    expect(refresh.disabled).toBe(true);
+    await act(async () => finish(Response.json([])));
+    expect(host.textContent).toContain(`No ${tab} yet`);
+    expect(refresh.disabled).toBe(false);
+    await click(`Refresh ${tab}`);
+    expect(refresh.disabled).toBe(true);
+    await act(async () =>
+      finish(Response.json([tab === "characters" ? character : location])),
+    );
+    expect(host.querySelectorAll(".entry-grid article")).toHaveLength(1);
+    expect(window.location.hash).toBe("#/worlds/7");
+  },
+);
+
+it("refreshes worlds after an uncertain save without resubmitting the draft", async () => {
+  await renderSignedIn();
+  await click("＋ Create world");
+  await input("worldName", "Draft");
+  apiFetch.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+  await submit();
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+    "refresh the collection",
+  );
+  await click("Cancel");
+  apiFetch.mockResolvedValueOnce(
+    Response.json([world, { ...world, worldId: 8, worldName: "Draft" }]),
+  );
+  await click("Refresh worlds");
+  expect(host.querySelectorAll(".world-card")).toHaveLength(2);
+  expect(
+    apiFetch.mock.calls.filter(
+      ([path, options]) =>
+        path === "/api/worlds/create" && options.method === "POST",
+    ),
+  ).toHaveLength(1);
+});
+
+it.each([
+  ["character", "characterDescription", 400],
+  ["character", "characterDescription", 403],
+  ["character", "characterDescription", 404],
+  ["location", "locationDesc", 400],
+  ["location", "locationDesc", 403],
+  ["location", "locationDesc", 404],
+  ["location", "locationDesc", 500],
+] as const)(
+  "retains the %s draft (%s) and card after a failed HTTP %i edit",
+  async (kind, description, status) => {
+    await renderSignedIn("/worlds/7");
+    if (kind === "location") await click("Locations 1");
+    await click("Edit");
+    await input(description, "Unsaved draft");
+    apiFetch.mockResolvedValueOnce(
+      Response.json({ errorMessage: "Description is invalid" }, { status }),
+    );
+    await submit();
+    expect(host.querySelector("dialog [role=alert]")).toBeTruthy();
+    expect(
+      host.querySelector<HTMLTextAreaElement>(`#${description}`)?.value,
+    ).toBe("Unsaved draft");
+    expect(host.querySelector(".entry-grid")?.textContent).not.toContain(
+      "Unsaved draft",
+    );
+    expect(host.querySelector(".feedback")?.textContent).toBe("");
+    await submit();
+    expect(host.querySelector("dialog")).toBeNull();
+    expect(host.querySelector(".feedback")?.textContent).toContain("updated.");
+  },
+);
+
+it.each(["character", "location"])(
+  "keeps a failed %s deletion open without removing its card",
+  async (kind) => {
+    await renderSignedIn("/worlds/7");
+    if (kind === "location") await click("Locations 1");
+    await click("Delete");
+    apiFetch.mockResolvedValueOnce(new Response(null, { status: 503 }));
+    await click(`Delete ${kind}`);
+    expect(host.querySelector("dialog [role=alert]")?.textContent).toContain(
+      "HTTP 503",
+    );
+    expect(host.querySelectorAll(".entry-grid article")).toHaveLength(1);
+    expect(host.querySelector(".feedback")?.textContent).toBe("");
+    await click(`Delete ${kind}`);
+    expect(host.querySelector("dialog")).toBeNull();
+    expect(host.querySelector(".feedback")?.textContent).toContain("deleted.");
+  },
+);
+
+it.each([
+  ["world", "/", world],
+  ["character", "/worlds/7", character],
+  ["location", "/worlds/7", location],
+] as const)(
+  "prevents duplicate %s saves and keeps the pending form open",
+  async (kind, route, dto) => {
+    await renderSignedIn(route);
+    if (kind === "location") await click("Locations 1");
+    await click("Edit");
+    let finish!: (response: Response) => void;
+    apiFetch.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const form = host.querySelector("form")!;
+    await act(async () => {
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true }),
+      );
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true }),
+      );
+    });
+    expect(form.getAttribute("aria-busy")).toBe("true");
+    expect(host.querySelector<HTMLFieldSetElement>("fieldset")?.disabled).toBe(
+      true,
+    );
+    expect(
+      apiFetch.mock.calls.filter(([, options]) => options.method === "PUT"),
+    ).toHaveLength(1);
+    await act(async () =>
+      host
+        .querySelector("dialog")!
+        .dispatchEvent(new Event("cancel", { cancelable: true })),
+    );
+    expect(host.querySelector("form")).toBe(form);
+    await act(async () => finish(Response.json(dto)));
+    expect(host.querySelector("dialog")).toBeNull();
+  },
+);
+
+it("never displays an earlier user's delayed collection after session expiry and login", async () => {
+  await renderSignedIn();
+  let finish!: (response: Response) => void;
+  apiFetch.mockImplementationOnce(
+    () =>
+      new Promise<Response>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  await click("Refresh worlds");
+  apiFetch.mockResolvedValueOnce(new Response(null, { status: 401 }));
+  await act(async () => {
+    await request("/users/me").catch(() => {});
+  });
+  expect(host.querySelector(".workspace")).toBeNull();
+  const respond = apiFetch.getMockImplementation()!;
+  apiFetch.mockImplementation((path, options) =>
+    path === "/api/worlds"
+      ? Promise.resolve(
+          Response.json([
+            { ...world, worldId: 20, worldName: "Second user's world" },
+          ]),
+        )
+      : path === "/api/users/me"
+        ? Promise.resolve(
+            Response.json({
+              userName: "Second user",
+              email: "second@example.com",
+            }),
+          )
+        : respond(path, options),
+  );
+  await login();
+  expect(host.querySelector(".account-trigger")?.textContent).toContain(
+    "Second user",
+  );
+  expect(host.querySelector(".world-card h2")?.textContent).toBe(
+    "Second user's world",
+  );
+  await act(async () =>
+    finish(
+      Response.json([{ ...world, worldName: "First user's private world" }]),
+    ),
+  );
+  expect(host.textContent).not.toContain("First user's private world");
+  expect(host.querySelector(".world-card h2")?.textContent).toBe(
+    "Second user's world",
+  );
+});
+
 it.each(["/", "/worlds/7", "/register"])(
   "checks the session and displays the guest forms at %s",
   async (hash) => {
@@ -841,6 +1181,20 @@ it("views, edits and deletes a character within its world", async () => {
     "/api/worlds/7/characters/3",
   );
   expect(host.querySelector("dialog")!.textContent).toContain("Test world");
+  expect(host.querySelector("dialog")!.textContent).not.toContain("Created");
+  expect(
+    Array.from(
+      host.querySelectorAll("dialog .details > div"),
+      (field) => field.textContent,
+    ),
+  ).toContain(`Name${character.characterName}`);
+  expect(
+    Array.from(
+      host.querySelectorAll("dialog .details > div"),
+      (field) => field.textContent,
+    ),
+  ).toContain(`World${world.worldName}`);
+  expect(host.querySelector("dialog .details")!.textContent).not.toMatch(/\bID\b/);
   await click("×");
   await click("Edit");
   await input("characterDescription", "Updated");
@@ -868,7 +1222,7 @@ it("views, edits and deletes a character within its world", async () => {
   });
 });
 
-it("creates, views, edits and deletes locations with the request/response description mapping", async () => {
+it("creates, views, edits and deletes locations using locationId and locationDesc", async () => {
   await renderSignedIn("/worlds/7");
   const locationsTab = Array.from(host.querySelectorAll("button")).find(
     (button) => button.textContent?.startsWith("Locations"),
@@ -896,10 +1250,24 @@ it("creates, views, edits and deletes locations with the request/response descri
   expect(host.querySelector("dialog")!.textContent).toContain(
     "A place description",
   );
+  expect(
+    Array.from(
+      host.querySelectorAll("dialog .details > div"),
+      (field) => field.textContent,
+    ),
+  ).toContain(`Name${location.locationName}`);
+  expect(
+    Array.from(
+      host.querySelectorAll("dialog .details > div"),
+      (field) => field.textContent,
+    ),
+  ).toContain(`World${world.worldName}`);
+  expect(host.querySelector("dialog .details")!.textContent).not.toMatch(/\bID\b/);
+  expect(host.querySelector("dialog")!.textContent).not.toContain("Created");
   await click("×");
   await click("Edit");
   expect(host.querySelector<HTMLTextAreaElement>("#locationDesc")!.value).toBe(
-    location.locationDescription,
+    location.locationDesc,
   );
   await input("locationDesc", "Edited place");
   await submit();
@@ -942,6 +1310,7 @@ it("does not send unchanged account values and enforces password length", async 
 
 it("auth action buttons retain hash navigation, back/forward, and independent panorama state", async () => {
   await render("/login");
+  const requestCount = apiFetch.mock.calls.length;
   const navigation = host.querySelector(".auth-navigation")!;
   const image = host.querySelector(".is-active img");
   expect(host.querySelector(".auth-landing a")).toBeNull();
@@ -982,6 +1351,23 @@ it("auth action buttons retain hash navigation, back/forward, and independent pa
   );
   expect(window.location.hash).toBe("#/login");
   expect(host.querySelector(".is-active img")).toBe(image);
+  expect(apiFetch.mock.calls).toHaveLength(requestCount);
+});
+
+it("uses readable world labels while retaining database IDs in navigation", async () => {
+  await renderSignedIn();
+  expect(host.querySelector(".world-card .eyebrow")?.textContent).toBe("WORLD");
+  const link = host.querySelector<HTMLAnchorElement>(".world-card a")!;
+  expect(link.hash).toBe("#/worlds/7");
+  await act(async () => {
+    const changed = new Promise((resolve) =>
+      window.addEventListener("hashchange", resolve, { once: true }),
+    );
+    link.click();
+    await changed;
+  });
+  expect(host.querySelector(".world-heading .eyebrow")?.textContent).toBe("WORLD ARCHIVE");
+  expect(calls.map((call) => call.path)).toContain("/api/worlds/7");
 });
 
 it("keeps the workspace hidden while checking a session, then restores it", async () => {

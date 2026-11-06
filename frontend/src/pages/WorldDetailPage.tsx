@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import * as api from "../api";
-import type { WorldCharacter, Location, LocationType } from "../types";
+import { isLocationType, type WorldCharacter, type Location } from "../types";
 import { useResource } from "../hooks/useResource";
 import { Empty, ErrorState, Loading } from "../components/States";
 import { FeedbackMessage } from "../components/FeedbackMessage";
@@ -79,7 +79,7 @@ export function WorldDetailPage({ id }: { id: number }) {
           ? {
               locationName: editing.entry.locationName,
               locationType: editing.entry.locationType,
-              locationDesc: editing.entry.locationDescription,
+              locationDesc: editing.entry.locationDesc,
             }
           : {};
 
@@ -104,12 +104,15 @@ export function WorldDetailPage({ id }: { id: number }) {
       else await api.createCharacter(id, dto);
       characters.reload();
     } else {
+      if (!isLocationType(values.locationType))
+        throw new Error("Choose a location type.");
       const dto = {
         locationName: values.locationName,
-        locationType: values.locationType as LocationType,
+        locationType: values.locationType,
         locationDesc: values.locationDesc,
       };
-      if (editing.entry) await api.updateLocation(editing.entry.id, dto);
+      if (editing.entry)
+        await api.updateLocation(editing.entry.locationId, dto);
       else await api.createLocation(id, dto);
       locations.reload();
     }
@@ -145,9 +148,7 @@ export function WorldDetailPage({ id }: { id: number }) {
       </a>
       <header className="page-heading world-heading">
         <div>
-          <p className="eyebrow">
-            WORLD ARCHIVE / {String(id).padStart(2, "0")}
-          </p>
+          <p className="eyebrow">WORLD ARCHIVE</p>
           <h1>{selectedWorld.worldName || "Untitled world"}</h1>
           <p className="description">
             {selectedWorld.worldDesc || "No description yet."}
@@ -196,13 +197,22 @@ export function WorldDetailPage({ id }: { id: number }) {
             In {selectedWorld.worldName || "this untitled world"}
           </p>
         </div>
-        <button
-          type="button"
-          className="primary"
-          onClick={() => setEditing({ kind: tab })}
-        >
-          ＋ {tab === "characters" ? "Create character" : "Create location"}
-        </button>
+        <div className="actions">
+          <button
+            type="button"
+            onClick={resource.reload}
+            disabled={resource.loading}
+          >
+            Refresh {tab}
+          </button>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => setEditing({ kind: tab })}
+          >
+            ＋ {tab === "characters" ? "Create character" : "Create location"}
+          </button>
+        </div>
       </div>
       {resource.loading ? (
         <Loading />
@@ -272,20 +282,20 @@ export function WorldDetailPage({ id }: { id: number }) {
                 </article>
               ))
             : locations.data?.map((l) => (
-                <article className="entry-card" key={l.id}>
+                <article className="entry-card" key={l.locationId}>
                   <p className="eyebrow">{l.locationType}</p>
                   <h2>{l.locationName || "Unnamed location"}</h2>
                   <p
-                    className={`excerpt${l.locationDescription ? "" : " placeholder"}`}
+                    className={`excerpt${l.locationDesc ? "" : " placeholder"}`}
                   >
-                    {l.locationDescription || "No description yet."}
+                    {l.locationDesc || "No description yet."}
                   </p>
                   <div className="actions">
                     <button
                       type="button"
                       aria-label={`View ${l.locationName || "location"}`}
                       onClick={() =>
-                        setViewing({ kind: "locations", id: l.id })
+                        setViewing({ kind: "locations", id: l.locationId })
                       }
                     >
                       View
@@ -307,7 +317,7 @@ export function WorldDetailPage({ id }: { id: number }) {
                       onClick={() =>
                         setDeleting({
                           kind: "locations",
-                          id: l.id,
+                          id: l.locationId,
                           name: l.locationName,
                         })
                       }
@@ -361,6 +371,7 @@ export function WorldDetailPage({ id }: { id: number }) {
       {viewing && (
         <EntryDetail
           worldId={id}
+          worldName={selectedWorld.worldName}
           {...viewing}
           onClose={() => setViewing(null)}
         />
