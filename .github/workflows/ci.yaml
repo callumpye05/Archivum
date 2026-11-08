@@ -1,24 +1,24 @@
 name : Archivum CI
 
-on :
-  push :
+on:
+  push:
     pull-request:
-      workflow-dispatch :
+      workflow-dispatch:
 
-  permissions :
+  permissions:
     contents: read
 
 
-  jobs :
+  jobs:
     backend:
       runs-on: ubuntu-latest
-      steps :
-        - uses : actions/checkout@v7
+      steps:
+        - uses: actions/checkout@v7
         - uses: actions/setup-java@v6
-          with :
-            distribution : temurin
-            java-version : '25'
-            cache : maven
+          with:
+            distribution: temurin
+            java-version: '25'
+            cache: maven
             cache-dependency-path: backend/pom.xml
         - run: bash ./mvnw -f backend/pom.xml --batch-mode --no-transfer-progress verify
 
@@ -29,13 +29,13 @@ on :
           working-directory: frontend
           steps:
             - uses: actions/checkout@v7
-            - uses : actions/setup-node@v7
+            - uses: actions/setup-node@v7
               with:
                 node-version: '24.19.0'
                 cache: npm
                 cache-dependency-path: frontend/package-lock.json
             - run: npm ci
-            - run : npm test -- --run
+            - run: npm test -- --run
             - run: npm run build
 
 
