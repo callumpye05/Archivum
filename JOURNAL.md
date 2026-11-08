@@ -39,6 +39,11 @@ Also tested the migrations against a testing database through DBeaver.
 
 ## 11/03/2026 
 
-Today I updated the frontend , whilst also making use of an independant audit to detect security faults within Archivum. As a result, 
+Today I updated the frontend , whilst also making use of an independent audit to detect security faults within Archivum. As a result, 
 a crucial data problem was revealed, showing that hashed passwords could be obtained through certain endpoints, notably those that reference a user. 
-As a result, I decided to fix this using a custom dto response. It highlighted the importance of being cuatious when returning JPA entities.
+As a result, I decided to fix this using a custom dto response. It highlighted the importance of being cautious when returning JPA entities.
+
+
+## 11/05/2026 + 11/06/2026 
+
+Finished updating controller + services to return DTO's rather than JPA entities, additionally adapted frontend to new backend architecture. Next is Github Actions for CI.  
