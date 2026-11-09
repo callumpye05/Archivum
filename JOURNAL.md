@@ -47,3 +47,12 @@ As a result, I decided to fix this using a custom dto response. It highlighted t
 ## 11/05/2026 + 11/06/2026 
 
 Finished updating controller + services to return DTO's rather than JPA entities, additionally adapted frontend to new backend architecture. Next is Github Actions for CI.  
+
+
+## 11/08/2026
+
+Implemented CI to run tests as a requisite for PR 
+
+## 11/09/2026 
+
+Began implementing character relationships , created the entity + enum
